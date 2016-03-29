@@ -1,0 +1,66 @@
+<form method="post" action="./index.php?step=setup" onsubmit="return checkForm(this);">
+	<div class="main-body">
+<?php if($this->getPost('errors')){?>
+		<div class="errors"><?php echo $this->getPost('errors');?></div>
+<?php }?>
+		<div class="install-ui">
+			<h1>填写配置信息</h1>
+			<div class="setting">
+				<?php
+foreach($this->getElements() as $group){
+	echo '<h2>'.$group['label'].'</h2>';
+	echo '<p>';
+	foreach($group['elements'] as $name=>$attributes){
+		echo $this->getElementHtml($name,$attributes).'<br />';
+	}
+	echo '</p>';
+}
+?>
+			</div>
+			<div class="buttons"><button type="button" onclick="window.location.href='./index.php?step=welcome'">上一步</button>
+				&nbsp; <button type="submit" id="submit-button">开始安装</button></div>
+		</div>
+	</div>
+</form>
+<script type="text/javascript">
+function checkForm(form){
+	var elms = form.getElementsByTagName('input'),len = elms.length,result = ['',false];
+	document.getElementById('submit-button').disabled = true;
+	for(var i = 0; i<len; i++){
+		if(elms[i].name!='db_password' && elms[i].name!='db_tablepre' && (elms[i].value==='' || /^\s+$/.test(elms[i].value))){
+			result[0] = getLabelText(elms[i])+'不能为空';
+		}else if(elms[i].value!='' && elms[i].name=='db_tablepre' && !(/^\w+$/.test(elms[i].value))){
+			result[0] = '表名前缀必须是英文字母、数字和下划线或者是这些字符的组合';
+		}else if(elms[i].name=='other_adminpath' && !(/^\w+$/.test(elms[i].value))){
+			result[0] = '后台登录入口会被用于访问后台的URL, 必须是英文字母、数字和下划线或者是这些字符的组合';
+		}else if(elms[i].name=='other_cache_prefix' && !(/^\w+$/.test(elms[i].value))){
+			result[0] = '缓存键名前缀前缀必须是英文字母、数字和下划线或者是这些字符的组合';
+		}
+		if(result[0]!=''){
+			result[1] = elms[i];
+			break;
+		}
+	}
+	if(result[0]=='' && form.admin_password.value!=form.admin_password2.value){
+		result[0] = '两次输入的密码不一致';
+		result[1] = form.admin_password2;
+	}
+	if(result[0]!=''){
+		document.getElementById('submit-button').disabled = false;
+		window.alert(result[0]);
+		result[1].focus();
+		return false;
+	}
+	window.setTimeout('document.getElementById("submit-button").innerHTML="还需要些时间, 请耐心等候..."',2000);
+	return true;
+}
+function getLabelText(e){
+	var labels = e.parentNode.getElementsByTagName('label'),len = labels.length;
+	for(var i = 0; i<len; i++){
+		if(labels[i].getAttribute('for')==e.id){
+			return labels[i].innerHTML;
+		}
+	}
+	return '';
+}
+</script>
