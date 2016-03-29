@@ -481,6 +481,19 @@ class Admin_Block_Grid extends Core_Block_Abstract {
 	}
 
 	/**
+	 * @param array $options
+	 * @return string
+	 */
+	public function optionsToComboboxData(array $options){
+		$html = '';
+		foreach($options as $key=>$value){
+			$html=='' or $html .= ',';
+			$html .= '["'.Ddm_String::singleton()->escapeHtml($key).'","'.Ddm_String::singleton()->escapeHtml($value).'"]';
+		}
+		return "[$html]";
+	}
+
+	/**
 	 * @param array $columnOption
 	 * @param mixed $value
 	 * @return mixed

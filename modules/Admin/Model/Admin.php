@@ -50,7 +50,7 @@ class Admin_Model_Admin extends Core_Model_Abstract {
 		if($this->_isLoggedIn===NULL){
 			$this->_isLoggedIn = $this->getLoggedStatusAdapter()=='cookie' ? $this->verifyCookie()===1 : $this->verifySession()===1;
 			if($this->_isLoggedIn && $this->getLoggedStatusAdapter()=='cookie' && Ddm_Cookie::singleton()->getLifetime()){
-				$this->_saveLoggedInStatus();
+				$this->_saveLoggedInStatus();//刷新Cookie的过期时间
 			}
 		}
 		return $this->_isLoggedIn;
@@ -106,8 +106,7 @@ class Admin_Model_Admin extends Core_Model_Abstract {
 				$cookieHash = explode('-',Ddm_String::singleton()->base64Decode($cookieHash),3);
 				if(isset($cookieHash[2]) && isset($cookieHash[1]) && is_numeric($cookieHash[1]) && is_numeric($cookieHash[0])){
 					if(!$this->getId())$this->load($cookieHash[0]);
-					if($cookieHash2 = $this->getCookieHash()){
-						$cookieHash2 = explode('-',$cookieHash2,3);
+					if($cookieHash2 = $this->getCookieHash(true)){
 						if($this->admin_id && $this->is_active && $cookieHash2[2]===$cookieHash[2]){
 							$this->_verifyCookieResult = $cookieHash2[1]===$cookieHash[1] ? 1 : 2;
 						}
@@ -128,7 +127,7 @@ class Admin_Model_Admin extends Core_Model_Abstract {
 			if($adminData = Ddm::getHelper('admin')->getSession()->getData(self::SESSION_VARNAME)){
 				if(isset($adminData[2]) && isset($adminData[1]) && is_numeric($adminData[1]) && is_numeric($adminData[0])){
 					if(!$this->getId())$this->load($adminData[0]);
-					($cookieHash = $this->getCookieHash()) and $cookieHash = explode('-',$cookieHash);
+					$cookieHash = $this->getCookieHash(true);
 					if(!$cookieHash || !$this->is_active || $cookieHash[2]!=$adminData[2])return $this->_verifySessionResult;
 					$this->_verifySessionResult = $cookieHash[1]==$adminData[1] ? 1 : 2;
 				}
@@ -154,10 +153,13 @@ class Admin_Model_Admin extends Core_Model_Abstract {
 	}
 
 	/**
-	 * @return string
+	 * @param bool $asArray
+	 * @return string|array
 	 */
-	public function getCookieHash(){
-		return $this->getId() ? "$this->admin_id-$this->admin_logintime-".md5("$this->admin_name/$this->admin_pass/".Ddm::getConfig()->getConfigValue('hash_key')) : '';
+	public function getCookieHash($asArray = false){
+		$data = $this->getId() ? array($this->admin_id,$this->admin_logintime,md5("$this->admin_name/$this->admin_pass/".Ddm::getConfig()->getConfigValue('hash_key'))) : array();
+		if($asArray)return $data;
+		return $data ? "$data[0]-$data[1]-$data[2]" : '';
 	}
 
 	/**
@@ -264,7 +266,7 @@ class Admin_Model_Admin extends Core_Model_Abstract {
 			if($this->getLoggedStatusAdapter()=='cookie'){
 				Ddm_Cookie::singleton()->set(self::COOKIE_VARNAME,Ddm_String::singleton()->base64Encode($this->getCookieHash()),NULL,NULL,NULL,NULL,true);
 			}else{
-				Ddm::getHelper('admin')->getSession()->setData(self::SESSION_VARNAME,explode('-',$this->getCookieHash()));
+				Ddm::getHelper('admin')->getSession()->setData(self::SESSION_VARNAME,$this->getCookieHash(true));
 			}
 		}
 		return $this;

@@ -123,10 +123,10 @@ abstract class Core_Model_Resource_Entity extends Core_Model_Resource_Abstract {
 				$sql=='' or $sql .= ' UNION ALL ';
 				$sql .= "SELECT b.attribute_id,b.attribute_code,b.backend_type,a.language_id,a.`value` FROM `$table` AS a ".
 						"LEFT JOIN ".Ddm_Db::getTable('attribute')." AS b ON(b.attribute_id=a.attribute_id) ".
-						"WHERE a.entity_id='$id' AND a.language_id".($languageId ? " IN(0,$languageId)" : '=0');
+						"WHERE a.entity_id='$id' AND a.language_id".($languageId ? " IN(0,$languageId)" : '=0')." AND a.attribute_id IN(".implode(',',array_keys($attributes)).")";
 			}
 			foreach(Ddm_Db::getReadConn()->fetchAll($sql) as $row){
-				if($row['attribute_id'] && isset($attributes[$row['attribute_id']])){
+				if($row['attribute_id']){
 					isset($attributesValue[$row['language_id']]) or $attributesValue[$row['language_id']] = array();
 					$attributesValue[$row['language_id']][$row['attribute_code']] = $attributes[$row['attribute_id']]->getValue($row['value'],$row['backend_type']);
 				}

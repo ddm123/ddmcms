@@ -164,10 +164,11 @@ class Ddm_Cookie {
 	 * @param string $domain
 	 * @param int|bool $secure
 	 * @param bool $httponly
+	 * @param string $prefix
 	 * @return Ddm_Cookie
 	 */
-	public function set($name, $value, $lifetime = NULL, $path = NULL, $domain = NULL, $secure = NULL, $httponly = NULL){
-		$name = $this->_prefix.$name;
+	public function set($name, $value, $lifetime = NULL, $path = NULL, $domain = NULL, $secure = NULL, $httponly = NULL, $prefix = NULL){
+		$name = ($prefix===NULL ? $this->_prefix : $prefix).$name;
 		$lifetime===NULL and $lifetime = $this->getLifetime();
 		$expire = $lifetime ? $lifetime+Ddm_Request::server()->REQUEST_TIME : 0;
 		$path===NULL and $path = $this->getPath();

@@ -13,6 +13,6 @@ class Admin_Model_Helper {
 	 * @return Ddm_Session
 	 */
 	public static function getSession(){
-		return Ddm::getSession('admin','admin_s');
+		return Ddm::getSession('admin');
 	}
 }

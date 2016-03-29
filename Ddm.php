@@ -296,15 +296,14 @@ final class Ddm{
 	}
 
 	/**
-	 * @param type $namespace
-	 * @param type $sessionName
+	 * @param string $namespace
 	 * @return Ddm_Session
 	 */
-	public static function getSession($namespace = NULL,$sessionName = NULL){
-		if(isset(self::$_sessions["$namespace/$sessionName"]))return self::$_sessions["$namespace/$sessionName"];
-		self::$_sessions["$namespace/$sessionName"] = new Ddm_Session();
-		self::$_sessions["$namespace/$sessionName"]->init($namespace,$sessionName);
-		return self::$_sessions["$namespace/$sessionName"];
+	public static function getSession($namespace = NULL){
+		if(isset(self::$_sessions[$namespace]))return self::$_sessions[$namespace];
+		self::$_sessions[$namespace] = new Ddm_Session();
+		self::$_sessions[$namespace]->init($namespace);
+		return self::$_sessions[$namespace];
 	}
 
 	/**
@@ -321,13 +320,12 @@ final class Ddm{
 	 */
 	public static function init($languageId = false){
 		if(self::$_initialized==false){
-			error_reporting(E_ALL);
 			try{
 				spl_autoload_register(array('Ddm','_loadClass'));
 				if(self::isInstalled()){
-					ini_set('display_errors','Off');
+					//ini_set('display_errors','Off');
 					//ini_set('log_errors','Off');
-					set_error_handler(array('Ddm','_errorHandler'));
+					set_error_handler(array('Ddm','_errorHandler'),E_ALL);
 					register_shutdown_function(array('Ddm','_onShutdown'));
 				}
 				self::$_config = new Config_Model_Config();
@@ -346,7 +344,7 @@ final class Ddm{
 				self::$_initialized = true;
 			}catch(Exception $exception){
 				$exceptionLog = $exception->getMessage()."\r\n".$exception->getTraceAsString();
-				Ddm::getHelper('core')->saveFile(SITE_ROOT.'/data/errors/exception/exception-log-'.date('Y-m').'.txt',date('c')."\r\n$exceptionLog\r\n[{$_SERVER['REQUEST_METHOD']}]{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}\r\n\r\n",FILE_APPEND);
+				Ddm::getHelper('core')->saveFile(SITE_ROOT.'/data/errors/exception/exception-log-'.date('Y-m').'.txt',date('c')."\r\n$exceptionLog\r\n[{$_SERVER['REQUEST_METHOD']}] {$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}\r\n\r\n",FILE_APPEND);
 				if(self::$enableDebug){
 					echo "<pre>$exceptionLog</pre>";
 				}
@@ -372,10 +370,7 @@ final class Ddm{
 	 * @access private
 	 */
 	public static function _errorHandler($errno,$errstr,$errfile,$errline){
-		if(strpos($errstr, 'DateTimeZone::__construct')!==false)return false;
-
-		$errno = $errno & error_reporting();
-		if($errno == 0)return false;
+		if(($errno&error_reporting())==0)return;
 
 		if($errno==E_DEPRECATED && stripos($errstr,'magic_quotes_gpc')!==false){
 			// ignore strict and deprecated notices
@@ -405,6 +400,7 @@ final class Ddm{
 		$errorMessage .= ": $errstr  in $errfile on line $errline";
 		Ddm::getHelper('core')->saveFile(SITE_ROOT.'/data/errors/php/php-errors-'.date('Y-m').'.txt','['.date('c')."] $errorMessage\r\n[{$_SERVER['REQUEST_METHOD']}]{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}\r\n",FILE_APPEND);
 		if(self::$enableDebug)echo "$errorMessage<br />\r\n";
+		return true;
 	}
 
 	/**

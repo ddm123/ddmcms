@@ -180,10 +180,10 @@ abstract class Core_Model_Urlindex_Abstract {
 						$data[] = array(
 							'url_path'=>$this->getModule()."/$urlKey",
 							'language_id'=>$language['language_id'],
-							'module'=>$this->getModule(),
-							'controller'=>$this->getController(),
-							'action'=>$this->getAction(),
-							'params'=>$params
+							'module'=>(string)$this->getModule(),
+							'controller'=>(string)$this->getController(),
+							'action'=>(string)$this->getAction(),
+							'params'=>(string)$params
 						);
 					}
 				}
@@ -212,9 +212,9 @@ abstract class Core_Model_Urlindex_Abstract {
 		$cacheKey = 'remove_not_exist_url_'.$this->getUrlKeyAttribute()->getId();
 		if(!$checkCache || Ddm_Cache::load($cacheKey)==false){
 			Ddm_Db::getWriteConn()->delete(Ddm_Db::getTable('url_index'),array(
-				'module'=>$this->getModule(),
-				'controller'=>$this->getController(),
-				'action'=>$this->getAction()
+				'module'=>(string)$this->getModule(),
+				'controller'=>(string)$this->getController(),
+				'action'=>(string)$this->getAction()
 			));
 			Ddm_Cache::save($cacheKey,'1',array(),86400);
 		}

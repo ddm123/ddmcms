@@ -54,7 +54,7 @@ class Core_Model_Url {
 	 * @param array $params
 	 * @return Core_Model_Url
 	 */
-	public function saveUrl(array $urlKey,$module,$controller = NULL,$action = NULL,array $params = NULL){
+	public function saveUrl(array $urlKey,$module,$controller = '',$action = '',array $params = NULL){
 		if($urlKey && $module){
 			if($params!==NULL)$params = is_array($params) ? serialize($params) : NULL;
 			$data = array();
@@ -63,10 +63,10 @@ class Core_Model_Url {
 				$data[] = array(
 					'url_path'=>"$module/$_urlKey",
 					'language_id'=>(int)$languageId,
-					'module'=>$module,
-					'controller'=>$controller,
-					'action'=>$action,
-					'params'=>$params
+					'module'=>(string)$module,
+					'controller'=>(string)$controller,
+					'action'=>(string)$action,
+					'params'=>(string)$params
 				);
 			}
 			if($data)
@@ -84,21 +84,21 @@ class Core_Model_Url {
 	 * @param array $params
 	 * @return Core_Model_Url
 	 */
-	public function saveUrlIndex($urlKey,$languageId,$module,$controller = NULL,$action = NULL,array $params = NULL){
+	public function saveUrlIndex($urlKey,$languageId,$module,$controller = '',$action = '',array $params = NULL){
 		if($urlKey && $module){
 			if($params!==NULL)$params = is_array($params) ? serialize($params) : NULL;
 			Ddm_Db::getWriteConn()->save($this->getMainTable(),array(
 				'url_path'=>"$module/$urlKey",
 				'language_id'=>(int)$languageId,
-				'module'=>$module,
-				'controller'=>$controller,
-				'action'=>$action,
-				'params'=>$params
+				'module'=>(string)$module,
+				'controller'=>(string)$controller,
+				'action'=>(string)$action,
+				'params'=>(string)$params
 			),Ddm_Db_Interface::SAVE_DUPLICATE,array(
-				'module'=>$module,
-				'controller'=>$controller,
-				'action'=>$action,
-				'params'=>$params
+				'module'=>(string)$module,
+				'controller'=>(string)$controller,
+				'action'=>(string)$action,
+				'params'=>(string)$params
 			));
 		}
 		return $this;
@@ -126,7 +126,7 @@ class Core_Model_Url {
 			}
 		}
 		//如果斜杠超过5个以上则认为这并不是后台填写的url_key
-		if(isset($urlPaths[2]) && ($urlPaths = array_slice($urlPaths,1,-1)) && !isset($urlPaths[5])){
+		if(isset($urlPaths[2]) && ($urlPaths = array_slice($urlPaths,1,-1,false)) && !isset($urlPaths[5])){
 			$where = Ddm_Db::getReadConn()->getSelect()->quoteInto(array(
 				'url_path'=>isset($urlPaths[1]) ? array('in'=>$urlPaths) : $urlPaths[0],
 				'language_id'=>intval($languageId===NULL ? Ddm::getLanguage()->language_id : $languageId)

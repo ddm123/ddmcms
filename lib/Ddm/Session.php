@@ -57,11 +57,13 @@ class Ddm_Session extends Ddm_Object {
 			$handlerObject->setSaveHandler();
 		}
 
+		$cookieLifetime = Ddm_Cookie::singleton()->getLifetime();
+		if(!$cookieLifetime)
+			session_set_cookie_params($cookieLifetime,Ddm_Cookie::singleton()->getPath(),Ddm_Cookie::singleton()->getDomain(),Ddm_Cookie::singleton()->isSecure(),Ddm_Cookie::singleton()->getHttponly());
+
 		$this->setSessionName($sessionName)->setSessionId();
 		session_start();
-		if(Ddm_Cookie::singleton()->getLifetime()){
-			Ddm_Cookie::singleton()->set(session_name(),session_id());
-		}
+		$cookieLifetime and Ddm_Cookie::singleton()->set(session_name(),session_id(),$cookieLifetime,NULL,NULL,NULL,NULL,'');
 
 		return $this;
 	}
@@ -113,7 +115,7 @@ class Ddm_Session extends Ddm_Object {
 	 * @return Ddm_Session
 	 */
 	public function setSessionId($sessionId = NULL){
-		if($sessionId===NULL && isset($_GET['_SID']))$sessionId = $_GET['_SID'];
+		if($sessionId===NULL && isset($_GET[$name = session_name()]))$sessionId = $_GET[$name];
 		if($sessionId && preg_match('/^[0-9a-zA-Z,-]+$/',$sessionId)){
 			session_id($sessionId);
 		}

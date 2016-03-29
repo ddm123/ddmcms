@@ -452,7 +452,7 @@ class Ddm_Controller {
 		}catch(Exception $exception){
 			Ddm::dispatchEvent('catch_controller_error_exception',array('controller'=>$this,'exception'=>$exception));
 			$exceptionLog = $exception->getMessage()."\r\n".$exception->getTraceAsString();
-			Ddm::getHelper('core')->saveFile(SITE_ROOT.'/data/errors/exception/exception-log-'.date('Y-m').'.txt',date('c')."\r\n$exceptionLog\r\n[{$_SERVER['REQUEST_METHOD']}]{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}\r\n\r\n",FILE_APPEND);
+			Ddm::getHelper('core')->saveFile(SITE_ROOT.'/data/errors/exception/exception-log-'.date('Y-m').'.txt',date('c')."\r\n$exceptionLog\r\n[{$_SERVER['REQUEST_METHOD']}] {$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}\r\n\r\n",FILE_APPEND);
 			if(Ddm::$enableDebug){
 				echo "<pre>$exceptionLog</pre>";
 			}

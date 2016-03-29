@@ -99,6 +99,10 @@ class Core_Model_Attribute extends Core_Model_Abstract {
 	}
 
 	protected function _beforeDelete() {
+		if($this->is_system==1 || $this->backend_type=='static'){
+			throw new Exception('System attributes can not be deleted');
+		}
+
 		Ddm::dispatchEvent('attribute_delete_before', array('object'=>$this));
 		return parent::_beforeDelete();
 	}

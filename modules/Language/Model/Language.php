@@ -91,7 +91,7 @@ class Language_Model_Language extends Core_Model_Abstract {
 			if(!$this->language_code)$this->loadFromId(0);
 			$this->setReadOnlyProperty(array('language_id','language_code'));
 
-			if(($this->_isSaveToCookie && !$this->isUrlIncludeLanguage()) || isset($_COOKIE[self::LANGUAGE_COOKIE_VARNAME])){
+			if(($this->_isSaveToCookie && !Ddm::getConfig()->getConfigValue('web/language/inc_url',0) && $this->getAllLanguage(false)) || isset($_COOKIE[self::LANGUAGE_COOKIE_VARNAME])){
 				$this->_saveToCookie($this->language_code);
 			}
 		}
@@ -254,8 +254,7 @@ class Language_Model_Language extends Core_Model_Abstract {
 	protected function _saveToCookie($languageId){
 		if(!isset($_COOKIE[self::LANGUAGE_COOKIE_VARNAME]) || $_COOKIE[self::LANGUAGE_COOKIE_VARNAME]!=$languageId){
 			$_COOKIE[self::LANGUAGE_COOKIE_VARNAME] = $languageId;
-			$cookieDomain = /*preg_match('/[\w\-]+\.\w+$/',Ddm_Request::server()->HTTP_HOST,$matches) ? '.'.$matches[0] : */Ddm_Request::server()->HTTP_HOST;
-			setcookie(self::LANGUAGE_COOKIE_VARNAME,$languageId,Ddm_Request::server()->REQUEST_TIME+604800,'/',$cookieDomain,false,false);
+			setcookie(self::LANGUAGE_COOKIE_VARNAME,$languageId,Ddm_Request::server()->REQUEST_TIME+604800,'/');
 		}
 		return $this;
 	}

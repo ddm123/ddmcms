@@ -46,7 +46,9 @@ var column = new combobox({'edit':false,'width':80,'data':[<?php
 $length = count($searchColumns);$i = 0;$columnsType = '';
 foreach($searchColumns as $columnId=>$column){
 	echo '["'.$columnId.'","'.Ddm_String::singleton()->escapeHtml($column['label']).'"]';
-	$columnsType .= '"'.$columnId.'":"'.$column['type'].'"';
+	if($column['type']=='options'){
+		$columnsType .= '"'.$columnId.'":'.(empty($column['options']) ? '[]' : $this->optionsToComboboxData($column['options']));
+	}else $columnsType .= '"'.$columnId.'":"'.$column['type'].'"';
 	if(++$i<$length){
 		echo ',';
 		$columnsType .= ',';
@@ -78,6 +80,19 @@ if($filterData['column'] && isset($searchColumns[$filterData['column']])){
 					(new combobox({'edit':false,'width':16,'data':[[0,"<?php echo Ddm::getTranslate('core')->translate('否');?>"],[1,"<?php echo Ddm::getTranslate('core')->translate('是');?>"]],'apply':'keyword-box','name':'keyword','selected':[<?php echo empty($filterData['keyword'])||!is_string($filterData['keyword']) ? '"0","'.Ddm::getTranslate('core')->translate('否').'"' : '"1","'.Ddm::getTranslate('core')->translate('是').'"'?>]})).init();
 				}
 				break;
+		}
+	}else if(typeof columnsType[selected[0]] == 'object'){
+		html = false;
+		if($id('keyword-box')){
+			$id('keyword-box').innerHTML = '';
+			var _selected = null;
+			for(var i = columnsType[selected[0]].length;i--;){
+				if(columnsType[selected[0]][i][0]=="<?php echo empty($filterData['keyword'])||!is_string($filterData['keyword']) ? '' : Ddm_String::singleton()->escapeHtml($filterData['keyword']);?>"){
+					_selected = columnsType[selected[0]][i];
+					break;
+				}
+			}
+			(new combobox({'edit':false,'data':columnsType[selected[0]],'apply':'keyword-box','name':'keyword','selected':_selected})).init();
 		}
 	}
 	if($id('keyword-box')){

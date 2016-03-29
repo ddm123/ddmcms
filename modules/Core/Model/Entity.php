@@ -9,6 +9,7 @@
 
 abstract class Core_Model_Entity extends Core_Model_Abstract {
 	protected static $_attributes = array();
+	protected $_attributeSelect = NULL;
 	protected $_attributesValue = array();
 	protected $_entity = 0;
 	protected $_entityPrimarykey = NULL;
@@ -68,6 +69,20 @@ abstract class Core_Model_Entity extends Core_Model_Abstract {
 			}
 		}
 		return self::$_attributes[$this->_entity];
+	}
+
+	/**
+	 * @return Ddm_Db_Select
+	 * @throws Exception
+	 */
+	public function getAttributeSelect() {
+		if($this->_attributeSelect===NULL){
+			if(!$this->_entity){
+				throw new Exception('Undefined entity property value');
+			}
+			$this->_attributeSelect = Ddm_Db::getReadConn()->getSelect()->from(array('main_table'=>Ddm_Db::getTable('attribute')))->where('main_table.entity_type',$this->_entity);
+		}
+		return $this->_attributeSelect;
 	}
 
 	/**
