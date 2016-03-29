@@ -268,7 +268,9 @@ class Admin_Controller_Admin extends Admin_Controller_Abstract {
 			Ddm_Request::redirect(Ddm::getLanguage()->getUrl('admin'));
 		}
 		if(isset($_POST['username']) && isset($_POST['password'])){
-			if($result = Admin_Model_Admin::loggedInAdmin()->login($_POST['username'],$_POST['password'])){
+			if(!$this->_validateFormKey()){
+				echo Ddm::getTranslate('admin')->translate('请刷新页面再重试登录');
+			}else if($result = Admin_Model_Admin::loggedInAdmin()->login($_POST['username'],$_POST['password'])){
 				if($result===1){
 					//删除缓存
 					Ddm_Cache::singleton()->removeByTags(array('admin_user'));

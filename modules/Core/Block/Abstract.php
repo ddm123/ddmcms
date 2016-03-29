@@ -278,6 +278,13 @@ abstract class Core_Block_Abstract extends Ddm_Object {
 	}
 
 	/**
+	 * @return string
+	 */
+	public function getFormKeyHiddenInput(){
+		return '<input name="form_key" type="hidden" value="'.Ddm::getHelper('core')->getFormKey().'" />';
+	}
+
+	/**
 	 *
 	 * @param string $id
 	 * @param array $tags

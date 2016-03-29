@@ -9,13 +9,40 @@
 
 class Core_Model_Helper {
 	const ENTITY_ATTRIBUTE_CACHE_KEY = 'entity_attributes_';
+	const CHARS_LOWERS = 'abcdefghijklmnopqrstuvwxyz';
+	const CHARS_UPPERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+	const CHARS_DIGITS = '0123456789';
+	const CHARS_SPECIALS = '!$*+-.=?@^_|~';
 
 	protected $_dateTime = NULL;
 	protected $_attributes = array();
 	protected $_entityAttributes = array();
+	protected $_formKey = NULL;
 
 	public function __construct() {
 		//;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getFormKey(){
+		if($this->_formKey===NULL){
+			$this->_formKey = Ddm::getSession()->form_key or Ddm::getSession()->setData('form_key',$this->_formKey = $this->getRandomString(8));
+		}
+		return $this->_formKey;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getRandomString($len, $chars = NULL){
+		$chars or $chars = self::CHARS_LOWERS.self::CHARS_UPPERS.self::CHARS_DIGITS;
+		mt_srand(10000000*(double)microtime());
+		for($i = 0, $str = '', $lc = strlen($chars)-1; $i<$len; $i++){
+			$str .= $chars[mt_rand(0, $lc)];
+		}
+		return $str;
 	}
 
 	/**

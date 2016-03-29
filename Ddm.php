@@ -422,13 +422,12 @@ final class Ddm{
 
 //-------------- debug functions ---------------------
 function varDump($str,$filename = NULL,$noObj = false){
-    if(is_array($str) || is_object($str)){
+    if(is_array($str)){
         if($noObj){
-            if(is_array($str)){
-                $str = print_r(_removeObjectItem($str),true);
-            }
-        }else $str = print_r($str,true);
-    }
+            $str = _filterObject($str);
+        }
+        $str = print_r($str,true);
+    }else if(is_object($str))$str = $noObj ? "object(".get_class($str).")" : print_r($str,true);
     else if(is_bool($str))$str = $str ? 'bool(true)' : 'bool(false)';
     else if($str===NULL)$str = 'NULL';
     if($filename){
@@ -437,10 +436,11 @@ function varDump($str,$filename = NULL,$noObj = false){
         echo "\r\n<pre style=\"text-align:left;\">$str</pre>\r\n";
     }
 }
-function _removeObjectItem($var){
+function _filterObject($var){
     if(is_array($var)){
         foreach($var as $k=>$v){
-            if(is_array($v))$var[$k] = _removeObjectItem(array_filter($v,create_function('$v','return !is_object($v) && !is_resource($v);')));
+            if(is_array($v))$var[$k] = _filterObject($v);
+            else if(is_object($v))$var[$k] = "object(".get_class($v).")";
         }
     }
     return $var;
@@ -455,21 +455,21 @@ function debugPrintBacktrace($saveAsFile = NULL){
     foreach(debug_backtrace() as $key=>$item){
         if($item['function'] == "include" || $item['function'] == "include_once" || $item['function'] == "require_once" || $item['function'] == "require"){
              $output .= "#".$key." ".$item['function']."(".$item['args'][0].") called at [".$item['file'].":".$item['line']."]\r\n";
-         }else{
-             if($args = isset($item['args']) ? $item['args'] : array()){
-                 $args = array_map(function($v){
-                     if(is_object($v))$v = get_class($v);
-                     else if(is_array($v))$v = 'array';
-                     else if(is_numeric($v));
-                     else if(is_string($v))$v = "'$v'";
-                     else if(is_bool($v))$v = $v ? 'true' : 'false';
-                     else if($v===NULL)$v = 'NULL';
-                     return $v;
-                 },$args);
-             }
+        }else{
+            if($args = isset($item['args']) ? $item['args'] : array()){
+                $args = array_map(function($v){
+                    if(is_object($v))$v = get_class($v);
+                    else if(is_array($v))$v = 'array';
+                    else if(is_numeric($v));
+                    else if(is_string($v))$v = "'$v'";
+                    else if(is_bool($v))$v = $v ? 'true' : 'false';
+                    else if($v===NULL)$v = 'NULL';
+                    return $v;
+                },$args);
+            }
             $class = isset($item['object']) ? get_class($item['object']) : '';
             $output .= "#".$key." ".(isset($item['class']) ? $item['class'].($class==$item['class'] ? '' : "($class)").$item['type'] : '').$item['function']."(".implode(',',$args).") called at [".$item['file'].":".$item['line']."]\r\n";
-         }
+        }
     }
     if($saveAsFile)file_put_contents(SITE_ROOT.'/data/debug/'.$saveAsFile,"[".strftime('%Y-%m-%d %H:%M:%S')."]\r\n$output\r\n",FILE_APPEND);
     else echo "<pre style=\"text-align:left;\">\r\n$output</pre>";
