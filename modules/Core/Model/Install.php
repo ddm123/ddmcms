@@ -104,9 +104,9 @@ class Core_Model_Install {
 
 			$modulesVersion = $this->getModulesVersion();
 			$modules = Ddm::getModuleConfig();
-			unset($modules['Core'],$modules['Language']);
-			//把Core模块和Language模块先安装
-			$modules = array_merge(array('Core'=>Ddm::getModuleConfig('Core'),'Language'=>Ddm::getModuleConfig('Language')),$modules);
+			unset($modules['Core'],$modules['Language'],$modules['Config']);
+			//调整下模块的安装顺序
+			$modules = array_merge(array('Config'=>Ddm::getModuleConfig('Config'),'Core'=>Ddm::getModuleConfig('Core'),'Language'=>Ddm::getModuleConfig('Language')),$modules);
 			foreach($modules as $moduleName=>$config){
 				if(empty($config['version']))$config['version'] = '1.0.0.0';
 				$isActive = !empty($config['active']);

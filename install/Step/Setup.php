@@ -70,14 +70,14 @@ class Step_Setup extends Step_Abstract {
 			}
 		}
 		if($result['status']){
-			if($_POST['db_driver']=='Mysqli'){
+			if($_POST['db_driver']=='Ddm_Db_Mysqli'){
 				$link = @mysqli_connect($_POST['db_host'],$_POST['db_username'],$_POST['db_password'],$_POST['db_name'],$_POST['db_port']);
 				if(!$link){
 					$result['message'] = 'MySQL返回错误: '.mysqli_connect_error();
 					$result['status'] = false;
 				}
 			}else{
-				$_POST['db_driver'] = 'Mysql';
+				$_POST['db_driver'] = 'Ddm_Db_Mysql';
 				$link = @mysql_connect($_POST['db_host'].':'.$_POST['db_port'],$_POST['db_username'],$_POST['db_password']);
 				if(!$link){
 					$result['message'] = 'MySQL返回错误: '.mysql_error();

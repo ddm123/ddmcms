@@ -282,8 +282,8 @@ class Ddm_Db_Mysqli implements Ddm_Db_Interface{
 	private function _error($sql){
 		$mysqlErrorMessage = '';
 		if($this->_mysqli->connect_errno){
-			isset($this->_mysqli->connect_error) or $this->_mysqli->connect_error = mysqli_connect_error();
-			$mysqlErrorMessage .= "\r\nConnect Error: ".$this->_mysqli->connect_error;
+			$connectError = isset($this->_mysqli->connect_error) ? $this->_mysqli->connect_error : mysqli_connect_error();
+			$mysqlErrorMessage .= "\r\nConnect Error: ".$connectError;
 		}
 		if($this->_mysqli->error)$mysqlErrorMessage .= "\r\nErrormessage: ".$this->_mysqli->error."\r\n";
 		if(defined('SITE_ROOT')){

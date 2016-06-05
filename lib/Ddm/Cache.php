@@ -71,7 +71,7 @@ class Ddm_Cache {
 		if($this->_cache===NULL){
 			$config = Ddm::getConfig()->getXmlConfig();
 			$cacheClass = !isset($config['cache']['driver']) || $config['cache']['driver']=='' ? 'Ddm_Cache_File' : $config['cache']['driver'];
-			$this->_cache = new $cacheClass($config['cache']);
+			$this->_cache = new $cacheClass(isset($config['cache']) ? $config['cache'] : array());
 			$this->_prefix = isset($config['cache']['prefix']) ? $config['cache']['prefix'] : '';
 		}
 		return $this->_cache;

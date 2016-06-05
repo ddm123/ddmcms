@@ -180,7 +180,7 @@ final class Ddm{
 				isset($observer['type']) or $observer['type'] = 'new';
 				if($observer['class'] && $observer['method'] && $observer['type']!='disabled'){
 					$object = $observer['type']=='singleton' ? call_user_func(array($observer['class'], 'singleton')) : new $observer['class']();
-					$object->$observer['method']($data);
+					call_user_func(array($object,$observer['method']),$data);
 				}
 			}
 		}

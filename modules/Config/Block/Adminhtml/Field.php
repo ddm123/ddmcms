@@ -79,7 +79,7 @@ class Config_Block_Adminhtml_Field extends Admin_Block_Widget_Form {
 					$sourceModel = new $form['source_model']();
 					$form['data'] = isset($form['source_model@attributes']['parameters'])
 						? call_user_func_array(array($sourceModel,$form['source_model@attributes']['method']),$this->_getParameters($form['source_model@attributes']['parameters'],isset($form['source_model@attributes']['delimiter'])?$form['source_model@attributes']['delimiter']:','))
-						: $sourceModel->$form['source_model@attributes']['method']();
+						: call_user_func(array($sourceModel,$form['source_model@attributes']['method']));
 					unset($form['source_model'],$form['source_model@attributes']);
 				}else if(isset($form['option'])){
 					is_array($form['option']) or $form['option'] = array($form['option']);
@@ -101,7 +101,7 @@ class Config_Block_Adminhtml_Field extends Admin_Block_Widget_Form {
 					$sourceModel = new $form['source_model']();
 					$form['list'] = isset($form['source_model@attributes']['parameters'])
 						? call_user_func_array(array($sourceModel,$form['source_model@attributes']['method']),$this->_getParameters($form['source_model@attributes']['parameters'],isset($form['source_model@attributes']['delimiter'])?$form['source_model@attributes']['delimiter']:','))
-						: $sourceModel->$form['source_model@attributes']['method']();
+						: call_user_func(array($sourceModel,$form['source_model@attributes']['method']));
 					unset($form['source_model'],$form['source_model@attributes']);
 				}else if(isset($form['option'])){
 					is_array($form['option']) or $form['option'] = array($form['option']);

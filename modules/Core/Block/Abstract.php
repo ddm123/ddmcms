@@ -278,10 +278,14 @@ abstract class Core_Block_Abstract extends Ddm_Object {
 	}
 
 	/**
+	 * 尽可能的随机以多种方式输出, 增加匹配难度
 	 * @return string
 	 */
 	public function getFormKeyHiddenInput(){
-		return '<input name="form_key" type="hidden" value="'.Ddm::getHelper('core')->getFormKey().'" />';
+		$quotes = mt_rand(0,1) ? '"' : "'";
+		$attributes = array('name='.$quotes.'form_key'.$quotes,'type='.$quotes.'hidden'.$quotes,'value='.$quotes.Ddm::getHelper('core')->getFormKey().$quotes);
+		shuffle($attributes);
+		return '<input '.implode(' ',$attributes).' />';
 	}
 
 	/**

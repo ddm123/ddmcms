@@ -14,6 +14,7 @@ class Ddm_Session_File implements Ddm_Session_Interface {
 	protected $_sessions = array();
 	protected $_sessionsInfo = array();
 	protected $_sessionsInfoFileName = 'sessionsinfo.txt';
+	protected $_sessionsInfoLockFileName = 'sessionsinfo.lock';
 
 	/**
 	 * @param string $id
@@ -49,12 +50,22 @@ class Ddm_Session_File implements Ddm_Session_Interface {
 	 */
 	protected function _saveSessionsInfoToFile(){
 		if($this->_sessionsInfo){
+			$i = 0;
+			if(file_exists($this->_savePath.'/'.$this->_sessionsInfoLockFileName) && filemtime($this->_savePath.'/'.$this->_sessionsInfoLockFileName)+30<$_SERVER['REQUEST_TIME']){
+				unlink($this->_savePath.'/'.$this->_sessionsInfoLockFileName);
+			}
+			while(!($fp = @fopen($this->_savePath.'/'.$this->_sessionsInfoLockFileName,'x',false))){
+				if(++$i>=20)return $this;
+				usleep(500000);//500毫秒
+			}
+			fclose($fp);
 			$origSessionsInfo = $this->_getSessionsInfoFromFile();
 			foreach($this->_sessionsInfo as $id=>$data){
 				if($data)$origSessionsInfo[$id] = $data;
 				else unset($origSessionsInfo[$id]);
 			}
-			file_put_contents($this->_savePath.'/'.$this->_sessionsInfoFileName,serialize($origSessionsInfo),LOCK_EX);
+			file_put_contents($this->_savePath.'/'.$this->_sessionsInfoFileName,serialize($origSessionsInfo));
+			unlink($this->_savePath.'/'.$this->_sessionsInfoLockFileName);
 		}
 		return $this;
 	}
