@@ -279,13 +279,37 @@ abstract class Core_Block_Abstract extends Ddm_Object {
 
 	/**
 	 * 尽可能的随机以多种方式输出, 增加匹配难度
+	 * @param bool $useJavascript
 	 * @return string
 	 */
-	public function getFormKeyHiddenInput(){
-		$quotes = mt_rand(0,1) ? '"' : "'";
-		$attributes = array('name='.$quotes.'form_key'.$quotes,'type='.$quotes.'hidden'.$quotes,'value='.$quotes.Ddm::getHelper('core')->getFormKey().$quotes);
-		shuffle($attributes);
-		return '<input '.implode(' ',$attributes).' />';
+	public function getFormKeyHiddenInput($useJavascript = false){
+		if($useJavascript){
+			$quotes = '"';
+			$formKeyValue = array_map(create_function('$s','return ord($s);'),str_split(Ddm::getHelper('core')->getFormKey()));
+			$htmlId = Ddm::getHelper('core')->getRandomString(8);
+			$attributes = array('id='.$quotes.'form-key-'.$htmlId.$quotes,'name='.$quotes.'form_key'.$quotes,'type='.$quotes.'hidden'.$quotes,'value='.$quotes.Ddm::getHelper('core')->getRandomString(8).$quotes);
+			$jsHash = array("Str","get","docu","form","Ele","Char","key","By",".","-","Id","Code","ment",")",'"',"(","=",","," ","from","value","ing");
+			$js = 'document.getElementById("form-key-'.$htmlId.'").value = String.fromCharCode('.implode(',',$formKeyValue).')';
+
+			$html = '<input name="form_key_value" style="display:none;" type="text" value="" />'."\n";
+			$html .= '<input '.implode(' ',$attributes).' />';
+			$html .= '<script type="text/javascript" id="javascript-'.$htmlId.'">';
+			$html .= '(function(){var self = document.getElementById("javascript-'.$htmlId.'");';
+			$html .= 'var c = ["'.str_replace('"""','\'"\'',implode('","',$jsHash)).'"];';
+			foreach($jsHash as $k=>$v)$js = str_replace($v,'$$+c['.$k.']+$$',$js);
+			$html .= 'eval('.'"'.str_replace(array('+$$$$+','$$'),array('+','"'),$js).';"'.');';
+			$html .= 'window.setTimeout(function(){try{self.removeNode(true);}catch($exception){self.parentNode.removeChild(self);}},1);';
+			$html .= '})();';
+			$html .= '</script>';
+			return $html;
+		}else{
+			$quotes = mt_rand(0,1) ? '"' : "'";
+			$attributes = array('name='.$quotes.'form_key'.$quotes,'type='.$quotes.'hidden'.$quotes,'value='.$quotes.Ddm::getHelper('core')->getFormKey().$quotes);
+			shuffle($attributes);
+			$html = '<input name="form_key_value" style="display:none;" type="text" value="" />'."\n";
+			$html .= '<input '.implode(' ',$attributes).' />';
+		}
+		return $html;
 	}
 
 	/**

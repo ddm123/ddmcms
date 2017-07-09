@@ -569,11 +569,11 @@ class Admin_Block_Grid extends Core_Block_Abstract {
 		if(is_array($keyword)){
 			$kw = array('from'=>isset($keyword['from']) ? $keyword['from'] : '','to'=>isset($keyword['to']) ? $keyword['to'] : '');
 			if($column['type']=='datetime' || $column['type']=='date'){
-				$kw['from'] = empty($kw['from']) ? '' : (string)Ddm::getHelper('core')->getDateTime()->stringToTime($kw['from']);
-				$kw['to'] = empty($kw['to']) ? '' : (string)Ddm::getHelper('core')->getDateTime()->stringToTime($kw['to']);
+				$kw['from'] = empty($kw['from']) ? '' : $this->_datetimeToTimestamp($kw['from'],0,0,0);
+				$kw['to'] = empty($kw['to']) ? '' : $this->_datetimeToTimestamp($kw['to'],23,59,59);
 			}else{
-				$kw['from']==='' or ($kw['from'] *= 1);
-				$kw['to']==='' or ($kw['to'] *= 1);
+				$kw['from']==='' or ($kw['from'] += 0);
+				$kw['to']==='' or ($kw['to'] += 0);
 			}
 			if($kw['from']!=='' && $kw['to']!=='')$value = array('between'=>$kw);
 			else if($kw['from']!=='')$value = array('>='=>$kw['from']);
@@ -594,5 +594,31 @@ class Admin_Block_Grid extends Core_Block_Abstract {
 				$this->_select->where($columnName,$this->getCondition($column,$this->_filterWhere[$columnName]));
 		}
 		return $this;
+	}
+
+	/**
+	 * @param string $datetime
+	 * @param int $hour
+	 * @param int $minute
+	 * @param int $second
+	 * @return int
+	 */
+	protected function _datetimeToTimestamp($datetime,$hour = NULL,$minute = NULL,$second = NULL){
+		if($datetime){
+			$timestamp = Ddm::getHelper('core')->getDateTime()->stringToTime($datetime);
+			if($hour!==NULL || $minute!==NULL || $second!==NULL){
+				$nowTime = explode(':',Ddm::getHelper('core')->getDateTime()->format('H:i:s'));
+				$_dateTime = Core_Model_DateTime::getFromUnixtimestamp($timestamp,Ddm::getHelper('core')->getDateTime()->getTimezone());
+				$_time = explode(':',$_dateTime->format('H:i:s'));
+				$_dateTime->setTime(
+					$_time[0]=='00' ? ($hour===NULL ? (int)$nowTime[0] : (int)$hour) : (int)$_time[0],
+					$_time[1]=='00' ? ($minute===NULL ? (int)$nowTime[1] : (int)$minute) : (int)$_time[1],
+					$_time[2]=='00' ? ($second===NULL ? (int)$nowTime[2] : (int)$second) : (int)$_time[2]
+				);
+				$timestamp = $_dateTime->getTimestamp();
+			}
+			return $timestamp;
+		}
+		return $datetime;
 	}
 }

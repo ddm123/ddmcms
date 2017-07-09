@@ -8,11 +8,9 @@
  */
 
 class Core_Model_DateTime extends DateTime {
-	protected static $_instance = NULL;
 	protected static $_now = NULL;
 	protected $_timezone = NULL;
 	protected $_timezoneName = NULL;
-	protected $_timestamp = NULL;
 	protected $_defaultDateTimeZoneName = NULL;
 
 	/**
@@ -20,9 +18,8 @@ class Core_Model_DateTime extends DateTime {
 	 * @param DateTimeZone $timezone
 	 */
 	public function __construct($time = 'now',DateTimeZone $timezone = NULL){
-		parent::__construct($time);
 		if(!$timezone)$timezone = $this->getDefaultDateTimeZoneName();
-		$this->setTimezone($timezone);
+		parent::__construct($time,($timezone instanceof DateTimeZone) ? $timezone : new DateTimeZone($timezone));
 	}
 
 	/**
@@ -30,7 +27,7 @@ class Core_Model_DateTime extends DateTime {
 	 */
 	public static function now(){
 		if(self::$_now===NULL){
-			$d = new DateTime('now');
+			$d = new DateTime('now',$this->getTimezone());
 			self::$_now = $d->format('Y-m-d H:i:s');
 		}
 		return self::$_now;
@@ -42,11 +39,9 @@ class Core_Model_DateTime extends DateTime {
 	 * @return Core_Model_DateTime
 	 */
 	public static function getFromUnixtimestamp($unixtimestamp = NULL,$timezone = NULL){
-		self::$_instance===NULL and self::$_instance = new Core_Model_DateTime();
-		if($timezone && $timezone!=self::$_instance->_timezoneName)self::$_instance->setTimezone($timezone);
-		$unixtimestamp===NULL and $unixtimestamp = Ddm_Request::server()->REQUEST_TIME;
-		self::$_instance->setTimestamp($unixtimestamp);
-		return self::$_instance;
+		$_datetime = $timezone ? new self('now',$timezone) : new self('now');
+		if(is_numeric($unixtimestamp))$_datetime->setTimestamp((int)$unixtimestamp);
+		return $_datetime;
 	}
 
 	/**
@@ -77,13 +72,12 @@ class Core_Model_DateTime extends DateTime {
 		if(method_exists('DateTime','setTimestamp')){//如果是PHP5.3版本以上
 			parent::setTimestamp($unixtimestamp);
 		}else{
-			$_date = new DateTime("@$unixtimestamp");
+			$_date = new DateTime(date('c',$unixtimestamp));
 			$_date->setTimezone($this->getTimezone());
 			$dateTime = explode('|',$_date->format('Y|n|j|G|i|s'));
 			$this->setDate($dateTime[0],$dateTime[1],$dateTime[2]);
 			$this->setTime($dateTime[3],(int)$dateTime[4],(int)$dateTime[5]);
 		}
-		$this->_timestamp = $unixtimestamp;
 		return $this;
 	}
 
@@ -91,14 +85,7 @@ class Core_Model_DateTime extends DateTime {
 	 * @return int
 	 */
 	public function getTimestamp(){
-		if($this->_timestamp===NULL){
-			if(method_exists('DateTime','getTimestamp')){//如果是PHP5.3版本以上
-				$this->_timestamp = parent::getTimestamp();
-			}else{
-				$this->_timestamp = $this->format('U');
-			}
-		}
-		return $this->_timestamp;
+		return method_exists('DateTime','getTimestamp') ? parent::getTimestamp() : $this->format('U');
 	}
 
 	/**
@@ -137,8 +124,8 @@ class Core_Model_DateTime extends DateTime {
 	 */
 	public function stringToTime($time = 'now',$c = true){
 		try{
-			$_date = new DateTime(strtr($time,'.','-'));
-			$_date->setTimezone($this->getTimezone());
+			$_date = new DateTime(strtr($time,'.','-'),$this->getTimezone());
+			//$_date->setTimezone($this->getTimezone());
 			$timestamp =  method_exists('DateTime','getTimestamp') ? $_date->getTimestamp() : $_date->format('U');
 		}catch(Exception $e){
 			$d = $c ? $this->_parseStringDate($time) : NULL;
@@ -153,8 +140,7 @@ class Core_Model_DateTime extends DateTime {
 	 */
 	protected function _parseStringDate($date,$y = 'Y',$m = 'm'){
 		$result = NULL;
-		$now = new DateTime('now');
-		$now->setTimezone($this->getTimezone());
+		$now = new DateTime('now',$this->getTimezone());
 
 		if((string)(int)$date===(string)$date){
 			$days = $now->format('t');

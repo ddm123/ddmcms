@@ -26,8 +26,11 @@ abstract class Core_Controller_Abstract {
 	 * @return bool
 	 */
 	protected function _validateFormKey(){
-		$formKey = Ddm_Request::post('form_key') or $formKey = Ddm_Request::get('form_key');
-		return $formKey && $formKey===Ddm::getHelper('core')->getFormKey();
+		if((isset($_POST['form_key_value']) && $_POST['form_key_value']==='') || (isset($_GET['form_key_value']) && $_GET['form_key_value']==='')){
+			$formKey = Ddm_Request::post('form_key') or $formKey = Ddm_Request::get('form_key');
+			return $formKey && $formKey===Ddm::getHelper('core')->getFormKey();
+		}
+		return false;
 	}
 
 	/**

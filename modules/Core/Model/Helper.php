@@ -14,10 +14,11 @@ class Core_Model_Helper {
 	const CHARS_DIGITS = '0123456789';
 	const CHARS_SPECIALS = '!$*+-.=?@^_|~';
 
+	private $_formKey = NULL;
+
 	protected $_dateTime = NULL;
 	protected $_attributes = array();
 	protected $_entityAttributes = array();
-	protected $_formKey = NULL;
 
 	public function __construct() {
 		//;
@@ -31,6 +32,14 @@ class Core_Model_Helper {
 			$this->_formKey = Ddm::getSession()->form_key or Ddm::getSession()->setData('form_key',$this->_formKey = $this->getRandomString(8));
 		}
 		return $this->_formKey;
+	}
+
+	/**
+	 * @return Core_Model_Helper
+	 */
+	public function destroyFormKey(){
+		Ddm::getSession()->unsetData('form_key');
+		return $this;
 	}
 
 	/**

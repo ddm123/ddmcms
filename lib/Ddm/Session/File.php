@@ -106,12 +106,13 @@ class Ddm_Session_File implements Ddm_Session_Interface {
 	public function gc($maxlifetime){
 		if($this->_gcProbability<1 || ($this->_gcProbability!=1 && mt_rand(1,$this->_gcProbability)!=1))return true;
 
-		$sessionsInfo = $this->_getSessionsInfoFromFile();
-		foreach($sessionsInfo as $id=>$data){
-			if($data[0] + $maxlifetime < $_SERVER['REQUEST_TIME']){
-				if(is_file($file = $this->_savePath.$data[1]))unlink($file);
-				$this->_sessions[$id] = '';
-				$this->_sessionsInfo[$id] = false;
+		if($sessionsInfo = $this->_getSessionsInfoFromFile()){
+			foreach($sessionsInfo as $id=>$data){
+				if($data[0] + $maxlifetime < $_SERVER['REQUEST_TIME']){
+					if(is_file($file = $this->_savePath.$data[1]))unlink($file);
+					$this->_sessions[$id] = '';
+					$this->_sessionsInfo[$id] = false;
+				}
 			}
 		}
 

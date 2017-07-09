@@ -73,8 +73,8 @@ class News_Block_Adminhtml_News_Edit extends Admin_Block_Widget_Form {
 			$config['type'] = 'radiogroup';
 		}else if($attribute->frontend_type=='select'){
 			$config['list'] = $attribute->source_model ? call_user_func(array($attribute->source_model, 'singleton'))->getAllOptions(false,false) : array();
-			$config['errormsg'] = Ddm::getTranslate('admin')->translate('请选择分类');
-			if(!$this->getNews())$config['selected'] = array('value'=>'','label'=>Ddm::getTranslate('admin')->translate('请选择分类'));
+			$config['errormsg'] = Ddm::getTranslate('admin')->___('请选择%s',Ddm::getTranslate('admin')->translate('分类'));
+			if(!$this->getNews())$config['selected'] = array('value'=>'','label'=>Ddm::getTranslate('admin')->___('请选择%s',Ddm::getTranslate('admin')->translate('分类')));
 		}
 		if($attribute->attribute_code=='author'){
 			unset($config['style']);

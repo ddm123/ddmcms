@@ -464,6 +464,8 @@ function debugPrintBacktrace($saveAsFile = NULL){
                 },$args);
             }
             $class = isset($item['object']) ? get_class($item['object']) : '';
+            isset($item['file']) or $item['file'] = 'None';
+            isset($item['line']) or $item['line'] = '0';
             $output .= "#".$key." ".(isset($item['class']) ? $item['class'].($class==$item['class'] ? '' : "($class)").$item['type'] : '').$item['function']."(".implode(',',$args).") called at [".$item['file'].":".$item['line']."]\r\n";
         }
     }
