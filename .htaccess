@@ -2,6 +2,8 @@
 
     DirectoryIndex index.html index.php
 
+    RedirectMatch 404 ^.*/(web\.config|\.env|composer\.json|composer\.lock|package\.json|package-lock\.lock|\.htaccess|\.htpasswd|LICENSE)$
+
 <IfModule mod_rewrite.c>
 
 ############################################
