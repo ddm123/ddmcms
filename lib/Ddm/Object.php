@@ -37,7 +37,7 @@ class Ddm_Object{
 			if(isset($this->_readOnlyAttribute[$name])){
 				throw new Exception("The \"$name\" attribute is read-only");
 			}else{
-				$this->$name = $value;
+				//$this->$name = $value;
 				$this->_data[$name] = $value;
 			}
 		}

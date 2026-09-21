@@ -94,7 +94,7 @@ abstract class Core_Block_Frontend_List_Abstract extends Core_Block_Abstract {
 	public function getCount(){
 		if($this->_totalRows===NULL){
 			$this->_beforeGetCount();
-			$this->_totalRows = (int)$this->getModelObject()->getCountSelect()->fetchOne(true);
+			$this->_totalRows = (int)$this->getModelObject()->getSelect()->count();
 			$this->_afterGetCount();
 		}
 		return $this->_totalRows;

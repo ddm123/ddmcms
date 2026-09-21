@@ -25,22 +25,22 @@ abstract class Core_Model_Resource_Abstract {
 	}
 
 	/**
+	 * @param string $mainTable
 	 * @param string $field
 	 * @param mixed $value
-	 * @return Ddm_Db_Select
+	 * @return Ddm_Db_Builder
 	 */
 	protected function _getLoadSelect($mainTable, $field, $value){
-		$select = new Ddm_Db_Select(Ddm_Db::getReadConn());
-		$select->from(array('main_table'=>Ddm_Db::getTable($mainTable)),'*')->where($field,$value);
+		$select = Ddm_Db::table(array('main_table'=>$mainTable));
+		$select->where($field, '=', $value);
 		return $select;
 	}
 
 	/**
-	 * @return Ddm_Db_Select
+	 * @return Ddm_Db_Builder
 	 */
 	protected function _getSelect(){
-		$this->_select = new Ddm_Db_Select(Ddm_Db::getReadConn());
-		$this->_select->from(array('main_table'=>$this->getMainTable()),'*');
+		$this->_select = Ddm_Db::table(array('main_table'=>$this->getMainTableName()));
 		return $this->_select;
 	}
 
@@ -123,12 +123,21 @@ abstract class Core_Model_Resource_Abstract {
 		return $this->_primarykey;
 	}
 
+	/**
+	 * 获取字段列表
+	 * @param string $table
+	 * @return array
+	 */
 	public function getFields($table){
 		if($table==''){
-			throw new Exception('$table parameter is empty');
+			throw new InvalidArgumentException('$table parameter is empty');
 		}
 		if(!isset($this->_fields[$table])){
-			$this->_fields[$table] = Ddm_Db::getReadConn()->fetchAll("SHOW COLUMNS FROM ".Ddm_Db::getTable($table),'Field');
+			$this->_fields[$table] = array();
+			$stmt = Ddm_Db::getReadConn()->query("SHOW COLUMNS FROM ".Ddm_Db::getTable($table));
+			while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
+				$this->_fields[$table][$row['Field']] = $row;
+			}
 		}
 		return $this->_fields[$table];
 	}
@@ -158,7 +167,7 @@ abstract class Core_Model_Resource_Abstract {
 	public function load(Core_Model_Abstract $object, $value, $field = NULL){
 		if($field===NULL)$field = "`main_table`.`$this->_primarykey`";
 		$select = $this->_getLoadSelect($this->_mainTableName,$field, $value);
-		if($result = Ddm_Db::getReadConn()->fetchOne($select->__toString())){
+		if($result = $select->first()){
 			$object->addData($result);
 			$object->setOrigData(NULL,NULL,true);
 		}
@@ -166,7 +175,7 @@ abstract class Core_Model_Resource_Abstract {
 	}
 
 	/**
-	 * @return Ddm_Db_Select
+	 * @return Ddm_Db_Builder
 	 */
 	public function getSelect(){
 		return $this->_select===NULL ? $this->_getSelect() : $this->_select;
@@ -176,16 +185,19 @@ abstract class Core_Model_Resource_Abstract {
 	 * @return Core_Model_Resource_Abstract
 	 */
 	public function save(Core_Model_Abstract $object){
-		Ddm_Db::$lockReadWiteType = Ddm_Db::WRITE;
+		Ddm_Db::lockWriteConn();
 		$this->_beforeSave($object);
 		$dataValue = $this->_getSaveData($object);
 
 		if($object->getId()){
 			unset($dataValue[$this->_primarykey]);
-			if($dataValue)Ddm_Db::getWriteConn()->save($this->getMainTable(),$dataValue,Ddm_Db_Interface::SAVE_UPDATE,array($this->_primarykey=>$object->getId()));
+			if($dataValue){
+				Ddm_Db::table($this->getMainTableName())
+					->where($this->_primarykey, '=', $object->getId())
+					->update($dataValue);
+			}
 		}else{
-			Ddm_Db::getWriteConn()->save($this->getMainTable(),$dataValue,Ddm_Db_Interface::SAVE_INSERT);
-			$object->setId(Ddm_Db::lastInsertId());
+			$object->setId(Ddm_Db::table($this->getMainTableName())->insertGetId($dataValue));
 		}
 
 		$this->_afterSave($object);
@@ -209,9 +221,11 @@ abstract class Core_Model_Resource_Abstract {
 		}
 		if($field==$this->_primarykey && !$object->getId())$object->setId($value);
 
-		Ddm_Db::$lockReadWiteType = Ddm_Db::WRITE;
+		Ddm_Db::lockWriteConn();
 		$this->_beforeDelete($object);
-		Ddm_Db::getWriteConn()->delete($this->getMainTable(),array($field=>$value));
+		Ddm_Db::table($this->getMainTableName())
+			->where($field, '=', $value)
+			->delete();
 		$this->_afterDelete($object);
 		Ddm_Db::unLockReadWite();
 

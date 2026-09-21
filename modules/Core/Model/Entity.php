@@ -14,6 +14,7 @@ abstract class Core_Model_Entity extends Core_Model_Abstract {
 	protected $_entity = 0;
 	protected $_entityPrimarykey = NULL;
 	protected $_useDefaultValue = array();
+	protected $_selectedAttributes = array();
 
 	abstract protected function _initEntity();
 
@@ -72,7 +73,7 @@ abstract class Core_Model_Entity extends Core_Model_Abstract {
 	}
 
 	/**
-	 * @return Ddm_Db_Select
+	 * @return Ddm_Db_Builder
 	 * @throws Exception
 	 */
 	public function getAttributeSelect() {
@@ -80,7 +81,7 @@ abstract class Core_Model_Entity extends Core_Model_Abstract {
 			if(!$this->_entity){
 				throw new Exception('Undefined entity property value');
 			}
-			$this->_attributeSelect = Ddm_Db::getReadConn()->getSelect()->from(array('main_table'=>Ddm_Db::getTable('attribute')))->where('main_table.entity_type',$this->_entity);
+			$this->_attributeSelect = Ddm_Db::table(array('main_table'=>'attribute'))->where('main_table.entity_type','=',$this->_entity);
 		}
 		return $this->_attributeSelect;
 	}
@@ -110,13 +111,16 @@ abstract class Core_Model_Entity extends Core_Model_Abstract {
 	 * @return Core_Model_Entity
 	 */
 	public function addAttributeToSelect($attributeCode){
+		if(isset($this->_selectedAttributes[$attributeCode]))return $this;
+
 		$attribute = Ddm::getHelper('core')->getEntityAttribute($this->getEntity(),$attributeCode);
 		if($attribute && $attribute->backend_type!='static'){
+			$this->_selectedAttributes[$attributeCode] = $attribute;
 			$as = 'at_'.$attribute->attribute_code;
 			$languageId = $attribute->is_global ? 0 : (int)$this->language_id;
 			$this->getSelect()
 				->leftJoin(
-					array("{$as}_d"=>$attribute->getTable()),
+					array("{$as}_d"=>$attribute->getTable(), true),
 					"{$as}_d.entity_id=main_table.`".$this->getEntityPrimarykey()."` AND {$as}_d.attribute_id='".$attribute->attribute_id."' AND {$as}_d.language_id='0'",
 					$languageId ? NULL : array($attribute->attribute_code=>$attribute->getDecimalMultiple()===1 ? 'value' : $as.'_d.`value`/'.$attribute->getDecimalMultiple())
 				);

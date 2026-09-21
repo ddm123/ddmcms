@@ -11,17 +11,57 @@ class Ddm_Db {
 	const READ = 'read';
 	const WRITE = 'write';
 
+	/** @var array<string, Ddm_Db_Interface> */
 	private static $_connections = array();
+
+	/** @var array|null */
 	private static $_databaseConfig = NULL;
+
+	/** @var int */
 	private static $_beginTransaction = 0;
-	public static $lockReadWiteType = NULL;
+
+	/** @var string|null 'read' or 'write' */
+	private static $lockReadWiteType = NULL;
+
+	/** @var string[] */
+	private static $lockReadWiteTypes = array();
 
 	public function __clone(){
         trigger_error('Clone is not allowed.', E_USER_ERROR);
     }
 
+	/**
+	 * 解除锁定读/写库
+	 * @return void
+	 */
 	public static function unLockReadWite(){
-		self::$lockReadWiteType = NULL;
+		self::$lockReadWiteType = self::$lockReadWiteTypes ? array_pop(self::$lockReadWiteTypes) : NULL;
+	}
+
+	/**
+	 * 锁定读库
+	 * @return void
+	 */
+	public static function lockReadConn(){
+		self::lockConn(self::READ);
+	}
+
+	/**
+	 * 锁定写库
+	 * @return void
+	 */
+	public static function lockWriteConn(){
+		self::lockConn(self::WRITE);
+	}
+
+	/**
+	 * 锁定读/写库
+	 * @param string $type
+	 * @return void
+	 */
+	public static function lockConn($type){
+		self::$lockReadWiteTypes[] = self::$lockReadWiteType;
+		self::$lockReadWiteType = $type ? $type : self::READ;
 	}
 
 	/**
@@ -40,12 +80,14 @@ class Ddm_Db {
 
 	/**
 	 * Connect to the database
-	 * @param string $name 'read' or 'write'
+	 * @param string $name 连接哪个数据库
 	 * @return Ddm_Db_Interface
 	 */
 	public static function getConn($name){
 		if(self::$lockReadWiteType)$name = self::$lockReadWiteType;
-		else if(self::isBeginTransaction())$name = self::WRITE;
+		else if($name===self::READ && self::isBeginTransaction())$name = self::WRITE;
+		else if(!$name)$name = self::READ;
+
 		if(!isset(self::$_connections[$name])){
 			self::_getDatabaseConfig();
 			if(isset(self::$_databaseConfig[$name])){
@@ -61,7 +103,7 @@ class Ddm_Db {
 	}
 
 	/**
-	 * @return array
+	 * @return array<string, Ddm_Db_Interface>
 	 */
 	public static function getAllConnections(){
 		return self::$_connections;
@@ -78,10 +120,14 @@ class Ddm_Db {
 	}
 
 	/**
-	 * @return Ddm_Db_Select
+	 * 获取一个查询构造器实例, 用于查询、修改、删除等操作
+	 * @param string|array $name 表名, 也支持 array(别名=>表名) 或 "表名 as 别名"
+	 * @return Ddm_Db_Builder
 	 */
-	public static function getSelect(){
-		return new Ddm_Db_Select();
+	public static function table($name){
+		list($table,$alias,$isPrefixIncluded) = Ddm_Db_Builder::splitTableAlias($name);
+		$builder = new Ddm_Db_Builder($isPrefixIncluded ? $table : self::getTable($table),$alias);
+		return $builder->setIdentifierQuote(self::getReadConn()->getIdentifierQuote());
 	}
 
 	/**
@@ -113,6 +159,23 @@ class Ddm_Db {
 	public static function rollBack(){
 		self::$_beginTransaction--;
 		return self::$_beginTransaction===0 ? self::getWriteConn()->rollBack() : false;
+	}
+
+	/**
+	 * @param callable $callback
+	 * @return mixed
+	 */
+	public static function transaction($callback){
+		$result = null;
+		self::beginTransaction();
+		try {
+			$result = $callback();
+			self::commit();
+		} catch (Exception $e) {
+			self::rollBack();
+			throw $e;
+		}
+		return $result;
 	}
 
 	/**

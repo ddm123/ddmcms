@@ -8,8 +8,13 @@
  */
 
 abstract class Core_Model_Abstract extends Ddm_Object {
+	/** @var Core_Model_Resource_Abstract|null */
 	protected $_resource = NULL;
+
+	/** @var bool|null */
 	protected $_isLoaded = NULL;
+
+	/** @var bool */
 	protected $_isDeleted = false;
 
 	/**
@@ -67,25 +72,10 @@ abstract class Core_Model_Abstract extends Ddm_Object {
 	}
 
 	/**
-	 * @return Ddm_Db_Select
+	 * @return Ddm_Db_Builder
 	 */
 	public function getSelect(){
 		return $this->getResource()->getSelect();
-	}
-
-	/**
-	 * @return Ddm_Db_Select
-	 */
-	public function getCountSelect(){
-		$select = clone $this->getSelect();
-		$select->resetColumns()
-			->reset(Ddm_Db_Select::DISTINCT)
-			->reset(Ddm_Db_Select::GROUP)
-			->reset(Ddm_Db_Select::ORDER)
-			->reset(Ddm_Db_Select::LIMIT)
-			->columns(array('total'=>'COUNT(*)'));
-
-		return $select;
 	}
 
 	/**
@@ -143,7 +133,7 @@ abstract class Core_Model_Abstract extends Ddm_Object {
 	public function save(){
 		if($this->isDeleted())return $this;
 
-		Ddm_Db::$lockReadWiteType = Ddm_Db::WRITE;
+		Ddm_Db::lockWriteConn();
 		Ddm::dispatchEvent('model_save_before', array('object'=>$this));
 		$this->_beforeSave();
 		$this->getResource()->save($this);
@@ -161,7 +151,7 @@ abstract class Core_Model_Abstract extends Ddm_Object {
 	public function delete($id = NULL, $field = NULL){
 		if($this->isDeleted())return $this;
 
-		Ddm_Db::$lockReadWiteType = Ddm_Db::WRITE;
+		Ddm_Db::lockWriteConn();
 		Ddm::dispatchEvent('model_delete_before', array('object'=>$this));
 		$this->_beforeDelete();
 		$this->getResource()->delete($this, $id, $field);
