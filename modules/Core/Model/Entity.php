@@ -7,6 +7,9 @@
  * @copyright (c) 2010-2014 DDMCMS http://jinshui8.com/
  */
 
+/**
+ * @method Core_Model_Resource_Entity|Core_Model_Resource_Abstract getResource()
+ */
 abstract class Core_Model_Entity extends Core_Model_Abstract {
 	protected static $_attributes = array();
 	protected $_attributeSelect = NULL;
@@ -115,44 +118,47 @@ abstract class Core_Model_Entity extends Core_Model_Abstract {
 
 		$attribute = Ddm::getHelper('core')->getEntityAttribute($this->getEntity(),$attributeCode);
 		if($attribute && $attribute->backend_type!='static'){
-			$this->_selectedAttributes[$attributeCode] = $attribute;
+			$this->_selectedAttributes[$attributeCode] = array('attribute' => $attribute);
 			$as = 'at_'.$attribute->attribute_code;
 			$languageId = $attribute->is_global ? 0 : (int)$this->language_id;
-			$this->getSelect()
-				->leftJoin(
-					array("{$as}_d"=>$attribute->getTable(), true),
-					"{$as}_d.entity_id=main_table.`".$this->getEntityPrimarykey()."` AND {$as}_d.attribute_id='".$attribute->attribute_id."' AND {$as}_d.language_id='0'",
-					$languageId ? NULL : array($attribute->attribute_code=>$attribute->getDecimalMultiple()===1 ? 'value' : $as.'_d.`value`/'.$attribute->getDecimalMultiple())
-				);
+			$primarykey = $this->getEntityPrimarykey();
+			$builder = $this->getSelect();
+			$builder->leftJoin(
+				array("{$as}_d"=>$attribute->getTable(), true),
+				function(Ddm_Db_JoinClause $join) use($as, $attribute, $primarykey){
+					$join->on($as.'_d.entity_id','=','main_table.'.$primarykey);
+					$join->where($as.'_d.attribute_id','=',(int)$attribute->attribute_id);
+					$join->where($as.'_d.language_id','=',0);
+				}
+			);
 			if($languageId){
-				$this->getSelect()
-					->leftJoin(
-						array($as=>$attribute->getTable()),
-						"$as.entity_id=main_table.`".$this->getEntityPrimarykey()."` AND $as.attribute_id='".$attribute->attribute_id."' AND $as.language_id='$languageId'",
-						array($attribute->attribute_code=>"IFNULL($as.`value`,{$as}_d.`value`)".($attribute->getDecimalMultiple()===1 ? '' : '/'.$attribute->getDecimalMultiple()))
-					);
+				$builder->leftJoin(
+					array($as=>$attribute->getTable(), true),
+					function(Ddm_Db_JoinClause $join) use($as, $attribute, $primarykey, $languageId){
+						$join->on($as.'.entity_id','=','main_table.'.$primarykey);
+						$join->where($as.'.attribute_id','=',(int)$attribute->attribute_id);
+						$join->where($as.'.language_id','=',$languageId);
+					}
+				);
+				$this->_selectedAttributes[$attributeCode]['column'] = new Ddm_Db_Expression('IFNULL('.$builder->wrap($as.'.value').','.$builder->wrap($as.'_d.value').')'.($attribute->getDecimalMultiple()===1 ? '' : '/'.$attribute->getDecimalMultiple()));
+				$builder->addSelect(array($attribute->attribute_code=>$this->_selectedAttributes[$attributeCode]['column']));
+			}else{
+				$this->_selectedAttributes[$attributeCode]['column'] = $attribute->getDecimalMultiple()===1 ? $as.'_d.value' : new Ddm_Db_Expression($builder->wrap($as.'_d.value').'/'.$attribute->getDecimalMultiple());
+				$builder->addSelect(array($attribute->attribute_code=>$this->_selectedAttributes[$attributeCode]['column']));
 			}
 		}
 		return $this;
 	}
 
 	/**
-	 * @param string $attributeCode Attribute Code
-	 * @return Core_Model_Entity
-	 */
-	public function removeAttributeToSelect($attributeCode){
-		$this->getSelect()->resetJoin("at_$attributeCode")->resetJoin("at_{$attributeCode}_d");
-		return $this;
-	}
-
-	/**
 	 * @param string $attributeCode
 	 * @param mixed $value
+	 * @param string $operator
 	 * @return Core_Model_Entity
 	 */
-	public function addAttributeToFilter($attributeCode,$value){
+	public function addAttributeToFilter($attributeCode,$value,$operator = NULL){
 		$filter = $this->getAttributeFilter($attributeCode,$value);
-		$this->getSelect()->where($filter['field'],$filter['value']);
+		$this->getSelect()->where($filter['field'],$operator,$filter['value']);
 		return $this;
 	}
 
@@ -162,10 +168,9 @@ abstract class Core_Model_Entity extends Core_Model_Abstract {
 	 * @return array
 	 */
 	public function getAttributeFilter($attributeCode,$value){
-		$joins = $this->getSelect()->getPart(Ddm_Db_Select::JOINS);
-		if(isset($joins['at_'.$attributeCode.'_d'])){
-			$attribute = Ddm::getHelper('core')->getEntityAttribute($this->getEntity(),$attributeCode);
-			$fieldName = isset($joins['at_'.$attributeCode]) ? new Ddm_Db_Expression('IFNULL(at_'.$attributeCode.'.`value`,at_'.$attributeCode.'_d.value)') : 'at_'.$attributeCode.'_d.value';
+		if(isset($this->_selectedAttributes[$attributeCode])){
+			$attribute = $this->_selectedAttributes[$attributeCode]['attribute'];
+			$fieldName = $this->_selectedAttributes[$attributeCode]['column'];
 			if($attribute->getDecimalMultiple()>1){
 				$value = $this->_getAttributeDataValue($value,$attribute);
 			}
@@ -193,9 +198,11 @@ abstract class Core_Model_Entity extends Core_Model_Abstract {
 				}else{
 					if($attribute = Ddm::getHelper('core')->getEntityAttribute($this->getEntity(),$attributeCode)){
 						if($attribute->backend_type=='static'){
-							$data = Ddm_Db::getReadConn()->getSelect()->from($this->getResource()->getMainTable())
-								->where($this->getResource()->getPrimarykey(),$id)
-								->fetchOne();
+							if($this->issetData($attributeCode)) return $this->_attributesValue[$attributeCode] = $this->getData($attributeCode);
+
+							$data = Ddm_Db::table($this->getResource()->getMainTableName())
+								->where($this->getResource()->getPrimarykey(),'=',$id)
+								->first();
 							if($data){
 								$this->addData($data);
 								$this->_attributesValue[$attributeCode] = isset($data[$attributeCode]) ? $data[$attributeCode] : NULL;
@@ -205,12 +212,18 @@ abstract class Core_Model_Entity extends Core_Model_Abstract {
 						}else{
 							if($attribute->is_global)$languageId = 0;
 							else if($languageId===NULL)$languageId = (int)$this->language_id;
-							$select = Ddm_Db::getReadConn()->getSelect()->from(array('a'=>$attribute->getTable()),$languageId ? NULL : new Ddm_Db_Expression('a.`value` AS default_value,NULL AS language_value'));
+							$select = Ddm_Db::table(array('a'=>$attribute->getTable(), true));
 							if($languageId){
-								$select->leftJoin(array('b'=>$attribute->getTable()),"b.entity_id=a.entity_id AND b.attribute_id=a.attribute_id AND b.language_id='$languageId'",new Ddm_Db_Expression('a.`value` AS default_value,b.`value` AS language_value'));
+								$select->leftJoin(array('b'=>$attribute->getTable(), true),function(Ddm_Db_JoinClause $join) use($languageId){
+									$join->on('b.entity_id','=','a.entity_id');
+									$join->on('b.attribute_id','=','a.attribute_id');
+									$join->where('b.language_id','=',$languageId);
+								});
+								$select->addSelect(array('default_value'=>'a.value','language_value'=>'b.value'));
+							}else{
+								$select->addSelect(array('default_value'=>'a.value', 'language_value'=>new Ddm_Db_Expression('NULL')));
 							}
-							$data = $select->where('a.entity_id',$id)->where('a.attribute_id',$attribute->attribute_id)->where('a.language_id','0')
-								->fetchOne();
+							$data = $select->where('a.entity_id',$id)->where('a.attribute_id',$attribute->attribute_id)->where('a.language_id','0')->first();
 							if($data){
 								if($data['language_value']===NULL){
 									$this->_attributesValue[$attributeCode] = $attribute->getValue($data['default_value']);
@@ -239,7 +252,7 @@ abstract class Core_Model_Entity extends Core_Model_Abstract {
 	}
 
 	/**
-	 * @param type $attributeCode
+	 * @param string $attributeCode
 	 * @param bool $cover
 	 * @return Core_Model_Entity
 	 */

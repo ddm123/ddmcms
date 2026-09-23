@@ -122,10 +122,11 @@ class Ddm_Db {
 	/**
 	 * 获取一个查询构造器实例, 用于查询、修改、删除等操作
 	 * @param string|array $name 表名, 也支持 array(别名=>表名) 或 "表名 as 别名"
+	 * @param bool $isPrefixIncluded 表名是否已包含前缀
 	 * @return Ddm_Db_Builder
 	 */
-	public static function table($name){
-		list($table,$alias,$isPrefixIncluded) = Ddm_Db_Builder::splitTableAlias($name);
+	public static function table($name, $isPrefixIncluded = false){
+		list($table,$alias,$isPrefixIncluded) = Ddm_Db_Builder::splitTableAlias($name, $isPrefixIncluded);
 		$builder = new Ddm_Db_Builder($isPrefixIncluded ? $table : self::getTable($table),$alias);
 		return $builder->setIdentifierQuote(self::getReadConn()->getIdentifierQuote());
 	}

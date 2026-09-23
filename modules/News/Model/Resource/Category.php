@@ -18,7 +18,7 @@ class News_Model_Resource_Category extends Core_Model_Resource_Entity {
 	 * @return int
 	 */
 	public function getMaxPosition(){
-		return Ddm_Db::getReadConn()->fetchOne("SELECT MAX(`position`) AS p FROM ".$this->getMainTable(),true) + 1;
+		return Ddm_Db::table($this->getMainTableName())->value(new Ddm_Db_Expression('MAX(position)')) + 1;
 	}
 
 	/**
@@ -30,7 +30,7 @@ class News_Model_Resource_Category extends Core_Model_Resource_Entity {
 		$_category = new News_Model_Category();
 		$result = $_category->setLanguageId($category->language_id)->addAttributeToSelect('url_key')
 			->addAttributeToFilter('url_key',$urlKey)
-			->getSelect()->fetchOne(false);
+			->getSelect()->first();
 		if($result){
 			$category->addData($result)->setOrigData($result,NULL,true);
 		}
@@ -42,9 +42,11 @@ class News_Model_Resource_Category extends Core_Model_Resource_Entity {
 	 * @return array
 	 */
 	public function getNewsCount(){
-		$sql = "SELECT a.category_id,COUNT(b.news_id) AS c FROM ".Ddm_Db::getTable('news_category')." AS a";
-		$sql .= " LEFT JOIN ".Ddm_Db::getTable('news')." AS b ON(b.category_id=a.category_id) GROUP BY a.category_id ORDER BY NULL";
-		return Ddm_Db::getReadConn()->fetchPairs($sql);
+		return Ddm_Db::table(array('a'=>'news_category'))
+			->leftJoin(array('b'=>'news'),'b.category_id','=','a.category_id')
+			->groupBy(array('a.category_id'))
+			->orderBy(NULL)
+			->pluck(new Ddm_Db_Expression('COUNT(b.news_id)'),'a.category_id');
 	}
 
 	/**

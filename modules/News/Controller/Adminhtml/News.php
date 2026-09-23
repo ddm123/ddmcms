@@ -170,7 +170,7 @@ class News_Controller_Adminhtml_News extends Admin_Controller_Abstract {
 		$limit = (int)Ddm_Request::get('limit') or $limit = 2500;
 		$from = (int)Ddm_Request::get('limit') or $from = 1;
 		$urlKeyAttribute = Ddm::getHelper('core')->getEntityAttribute('news','url_key');
-		$maxId = (int)Ddm_Db::getReadConn()->fetchOne("SELECT MAX(entity_id) AS `max_id` FROM ".$urlKeyAttribute->getTable()." WHERE entity_id>0 AND attribute_id='".$urlKeyAttribute->getId()."'",true);
+		$maxId = (int)Ddm_Db::table($urlKeyAttribute->getTable(),true)->where('entity_id','>',0)->where('attribute_id','=',$urlKeyAttribute->getId())->value(new Ddm_Db_Expression('MAX(entity_id)'));
 		$result = array('limit'=>$limit,'from'=>$from,'maxId'=>$maxId,'error'=>'','url'=>'');
 		$urlIndex = new News_Model_News_Urlindex();
 

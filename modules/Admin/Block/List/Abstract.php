@@ -8,6 +8,7 @@
  */
 
 abstract class Admin_Block_List_Abstract extends Core_Block_Abstract {
+	/** @var Admin_Block_Grid */
 	protected $_grid = NULL;
 	protected $_gridBlockName = 'grid_list';
 
@@ -28,20 +29,24 @@ abstract class Admin_Block_List_Abstract extends Core_Block_Abstract {
 	 * @return Admin_Block_Grid
 	 */
 	protected function _createGridBlock(){
-		return $this->_grid===NULL ? ($this->_grid = $this->createBlock('admin','grid')->setListBlock($this)) : $this->_grid;
+		if($this->_grid===NULL){
+			$this->_grid = $this->createBlock('admin','grid');
+			$this->_grid->setListBlock($this);
+		}
+		return $this->_grid;
 	}
 
 	/**
-	 * @param Ddm_Db_Select $select
+	 * @param Ddm_Db_Builder $select
 	 * @return Admin_Block_Grid
 	 */
-	public function setSelect(Ddm_Db_Select $select){
+	public function setSelect(Ddm_Db_Builder $select){
 		$this->_grid->setSelect($select);
 		return $this;
 	}
 
 	/**
-	 * @return Ddm_Db_Select
+	 * @return Ddm_Db_Builder
 	 */
 	public function getSelect(){
 		return $this->_grid->getSelect();
@@ -54,7 +59,8 @@ abstract class Admin_Block_List_Abstract extends Core_Block_Abstract {
 	 * @return Admin_Block_List_Abstract
 	 */
 	public function applyFilter(array $columnOption,$fieldName,$value){
-		$this->_grid->getSelect()->where($fieldName,$this->_grid->getCondition($columnOption,$value));
+		list($operator,$value) = $this->_grid->getCondition($columnOption,$value);
+		$this->_grid->getSelect()->where($fieldName,$operator,$value);
 		return $this;
 	}
 
@@ -64,7 +70,7 @@ abstract class Admin_Block_List_Abstract extends Core_Block_Abstract {
 	 * @return Admin_Block_List_Abstract
 	 */
 	public function applySort($fieldName,$dir){
-		$this->_grid->getSelect()->order("$fieldName $dir");
+		$this->_grid->getSelect()->orderBy($fieldName,$dir);
 		return $this;
 	}
 

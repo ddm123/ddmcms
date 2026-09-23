@@ -21,9 +21,8 @@ class Admin_Model_Resource_Admin extends Core_Model_Resource_Abstract {
 	 */
 	public function login(Admin_Model_Admin $object,$username,$password){
 		if($username!='' && $password!=''){
-			$select = Ddm_Db::getReadConn()->getSelect();
-			$select->from($this->getMainTable())->where('admin_name',$username)->where('admin_pass',$object->getPasswordHash($password))->limit(2);
-			$result = Ddm_Db::getReadConn()->fetchAll($select->__toString());
+			$select = Ddm_Db::table($this->getMainTableName())->where('admin_name','=',$username)->where('admin_pass','=',$object->getPasswordHash($password))->limit(2);
+			$result = $select->get();
 			if(count($result)==1){
 				$object->addData($result[0]);
 				$object->setOrigData($result[0],NULL,true);
@@ -39,10 +38,11 @@ class Admin_Model_Resource_Admin extends Core_Model_Resource_Abstract {
 	 * @return array
 	 */
 	public function getGroupsFromAdminId($adminId){
-		$sql  = "SELECT a.group_id,b.group_name FROM ".Ddm_Db::getTable('admin_group_user')." AS a ";
-		$sql .= "INNER JOIN ".Ddm_Db::getTable('admin_group')." AS b ON(b.group_id=a.group_id) ";
-		$sql .= "WHERE a.admin_id='$adminId' ORDER BY a.`position` ASC";
-		return Ddm_Db::getReadConn()->fetchPairs($sql);
+		return Ddm_Db::table(array('a' => 'admin_group_user'))
+			->join(array('b' => 'admin_group'),'b.group_id','=','a.group_id')
+			->where('a.admin_id','=',$adminId)
+			->orderBy('a.position', 'ASC')
+			->pluck('b.group_name', 'a.group_id');
 	}
 
 	/**

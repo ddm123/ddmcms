@@ -35,9 +35,8 @@ class Language_Block_Adminhtml_Edit extends Admin_Block_Widget_Form {
 
 	protected function _prepareElements(){
 		if(!$this->getLanguage()){
-			$position = Ddm_Db::getReadConn()->getSelect()
-				->from(Ddm_Db::getTable('language'),array('p'=>'MAX(`position`)'))
-				->fetchOne(true);
+			$builder = Ddm_Db::table('language');
+			$position = $builder->value(new Ddm_Db_Expression('MAX('.$builder->wrap('position').')'));
 			$position = $position ? $position+1 : 1;
 		}else{
 			$position = $this->getLanguage()->position;

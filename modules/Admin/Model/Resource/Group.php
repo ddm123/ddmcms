@@ -19,10 +19,10 @@ class Admin_Model_Resource_Group extends Core_Model_Resource_Abstract {
 	 * @return array
 	 */
 	public function getAllGroups($groupId = NULL){
-		$sql  = "SELECT a.group_id,a.group_name FROM ".$this->getMainTable()." AS a ";
-		if($groupId!==NULL)$sql .= "WHERE a.group_id='".intval($groupId)."' ";
-		$sql .= "ORDER BY a.`group_id` ASC";
-		return Ddm_Db::getReadConn()->fetchPairs($sql);
+		$builder = Ddm_Db::table(array('a' => $this->getMainTableName()));
+		$builder->orderBy('a.group_id', 'ASC');
+		if($groupId!==NULL)$builder->where('a.group_id','=',(int)$groupId);
+		return $builder->pluck('a.group_name','a.group_id');
 	}
 
 	/**
@@ -30,14 +30,13 @@ class Admin_Model_Resource_Group extends Core_Model_Resource_Abstract {
 	 * @return array
 	 */
 	public function getAllowsDataFromAdminId($adminId){
-		$select = Ddm_Db::getReadConn()->getSelect();
+		$select = Ddm_Db::table(array('gu'=>'admin_group_user'));
+		$select->join(array('allow'=>'admin_allow'),'allow.group_id','=','gu.group_id');
+		$select->leftJoin(array('v'=>'admin_allow_value'),'v.allow_id','=','allow.allow_id');
+		$select->where('gu.admin_id','=',$adminId);
+		$select->orderBy('gu.position','ASC');
 
-		$select->from(array('gu'=>Ddm_Db::getTable('admin_group_user')),'group_id')
-			->innerJoin(array('allow'=>Ddm_Db::getTable('admin_allow')),"`allow`.group_id=gu.group_id",'path')
-			->leftJoin(array('v'=>Ddm_Db::getTable('admin_allow_value')),"v.allow_id=`allow`.allow_id",array('allow_type','allow_value'));
-		$select->where('gu.admin_id',$adminId)->order('gu.`position` ASC');
-
-		return $select->fetchAll();
+		return $select->get(array('gu.group_id','allow.path','v.allow_type','v.allow_value'));
 	}
 
 	/**
@@ -46,12 +45,11 @@ class Admin_Model_Resource_Group extends Core_Model_Resource_Abstract {
 	 */
 	public function getAllowsFromGroupId($groupId){
 		$allows = array();
-		$select = Ddm_Db::getReadConn()->getSelect();
+		$select = Ddm_Db::table(array('allow'=>'admin_allow'));
+		$select->leftJoin(array('v'=>'admin_allow_value'),'v.allow_id','=','allow.allow_id');
+		$select->where('allow.group_id','=',$groupId);
 
-		$select->from(array('allow'=>Ddm_Db::getTable('admin_allow')),'path')
-			->leftJoin(array('v'=>Ddm_Db::getTable('admin_allow_value')),"v.allow_id=`allow`.allow_id",array('allow_type','allow_value'));
-		$select->where('allow.group_id',$groupId);
-		$result = $select->fetchAll();
+		$result = $select->get(array('allow.path','v.allow_type','v.allow_value'));
 
 		if($result && $result[0]['path']=='all')return $result[0]['path'];
 		foreach($result as $row){
@@ -120,7 +118,7 @@ class Admin_Model_Resource_Group extends Core_Model_Resource_Abstract {
 	 */
 	public function getUserCount($groupId){
 		if($groupId = (int)$groupId){
-			return Ddm_Db::getReadConn()->count(Ddm_Db::getTable('admin_group_user'),array('group_id'=>$groupId));
+			return Ddm_Db::table('admin_group_user')->where('group_id','=',$groupId)->count();
 		}
 		return 0;
 	}

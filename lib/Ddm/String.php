@@ -199,7 +199,7 @@ class Ddm_String {
 		if($l<=$length)return -1;
 		//$length--;//返回的字符数会比要取的字符数多1, 所以这里减1 (例如本来想取10个, 但返回了11)
 		for($i = 0,$j = 0,$c = $q = $q1 = $s = false; $i<$l && $j<$length; $i++){
-			$char = $html{$i};
+			$char = $html[$i];
 			$nc = $i+1<$l ? strtolower($html[$i+1]) : NULL;
 			if($c && $char=='"' && !$q1)$q = !$q;
 			if($c && $char=="'" && !$q)$q1 = !$q1;

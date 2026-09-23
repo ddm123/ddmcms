@@ -19,8 +19,7 @@ class Language_Block_Adminhtml_List extends Admin_Block_List_Abstract {
 		$this->_grid->primaryKey = 'language_id';
 		$this->_grid->saveFieldValueUrl = Ddm::getUrl('*/*/save-field-value');
 
-		$select = Ddm_Db::getReadConn()->getSelect();
-		$select->from(array('a'=>Ddm_Db::getTable('language')),'*');
+		$select = Ddm_Db::table(array('a'=>'language'));
 		$this->_grid->setSelect($select);
 
 		return $this;

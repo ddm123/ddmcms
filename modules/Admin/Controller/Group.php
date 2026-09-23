@@ -58,7 +58,7 @@ class Admin_Controller_Group extends Admin_Controller_Abstract {
 						$success = 'false';
 						$message = Ddm::getTranslate('admin')->___('%s不能为空',Ddm::getTranslate('admin')->translate('组名称'));
 					}else if($group->group_name!=$value){
-						$exists = Ddm_Db::getReadConn()->count($group->getResource()->getMainTable(),array('group_name'=>$value,array('group_id'=>array('<>'=>$id))));
+						$exists = Ddm_Db::table($group->getResource()->getMainTable(), true)->where('group_name','=',$value)->where('group_id','!=',$id)->exists();
 						if($exists){
 							$success = 'false';
 							$message = Ddm::getTranslate('admin')->translate('您填写的组名称已经存在了');
@@ -109,7 +109,10 @@ class Admin_Controller_Group extends Admin_Controller_Abstract {
 					return;
 				}
 			}
-			$exists = Ddm_Db::getReadConn()->count($group->getResource()->getMainTable(),array('group_name'=>$groupName,array('group_id'=>$groupId ? array('<>'=>$groupId) : array('>'=>0))));
+			$exists = Ddm_Db::table($group->getResource()->getMainTable(), true)
+				->where('group_name','=',$groupName)
+				->where('group_id',$groupId ? '!=' : '>', $groupId ?: 0)
+				->exists();
 			if($exists){
 				$this->getNotice()->addError(Ddm::getTranslate('admin')->translate('您填写的组名称已经存在了'));
 				Ddm_Request::redirect($groupId ? Ddm::getLanguage()->getUrl('*/*/edit',array('id'=>$groupId)) : Ddm::getLanguage()->getUrl('*/*/add'));

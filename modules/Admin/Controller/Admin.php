@@ -61,9 +61,7 @@ class Admin_Controller_Admin extends Admin_Controller_Abstract {
 		$field = Ddm_Request::post('f');
 		$id = (int)Ddm_Request::post('id');
 		if($id && in_array($field,$fields)){
-			echo Ddm_Db::getReadConn()->getSelect()
-				->from(Ddm_Db::getTable('admin_user'),$field)
-				->where('admin_id',$id)->fetchOne(true);
+			echo Ddm_Db::table('admin_user')->where('admin_id','=',$id)->value($field);
 		}else{
 			echo trim(Ddm_Request::post('v',false,''));
 		}
@@ -85,18 +83,20 @@ class Admin_Controller_Admin extends Admin_Controller_Abstract {
 						$success = 'false';
 						$message = Ddm::getTranslate('admin')->___('%s不能为空',Ddm::getTranslate('admin')->translate('用户名'));
 					}else{
-						$exists = Ddm_Db::getReadConn()->count($admin->getResource()->getMainTable(),array('admin_name'=>$value,array('admin_id'=>array('<>'=>$id))));
+						$exists = Ddm_Db::table($admin->getResource()->getMainTable(), true)->where('admin_name','=',$value)->where('admin_id','!=',$id)->exists();
 						if($exists){
 							$success = 'false';
 							$message = Ddm::getTranslate('admin')->translate('您填写的用户名已经存在了');
 						}else{
-							$admin->setData($field,$value)->save();
+							$admin->setData($field,$value);
+							$admin->save();
 							$success = 'true';
 						}
 					}
 				}else if(in_array($field,$fields)){
 					$field=='description' or $value = (int)$value;
-					$admin->setData($field,$value)->save();
+					$admin->setData($field,$value);
+					$admin->save();
 					$success = 'true';
 				}
 				Ddm_Db::commit();
@@ -163,7 +163,10 @@ class Admin_Controller_Admin extends Admin_Controller_Abstract {
 					return;
 				}
 			}
-			$exists = Ddm_Db::getReadConn()->count($admin->getResource()->getMainTable(),array('admin_name'=>$adminName,array('admin_id'=>$adminId ? array('<>'=>$adminId) : array('>'=>0))));
+			$exists = Ddm_Db::table($admin->getResource()->getMainTable(), true)
+				->where('admin_name','=',$adminName)
+				->where('admin_id',$adminId ? '!=' : '>',$adminId ?: 0)
+				->exists();
 			if($exists){
 				$this->getNotice()->addError(Ddm::getTranslate('admin')->translate('您填写的用户名已经存在了'));
 				Ddm_Request::redirect($adminId ? Ddm::getLanguage()->getUrl('*/*/edit',array('id'=>$adminId)) : Ddm::getLanguage()->getUrl('*/*/add'));
@@ -229,7 +232,7 @@ class Admin_Controller_Admin extends Admin_Controller_Abstract {
 			$error = false;
 			if($admin->edit_name){
 				if($adminName = trim(Ddm_Request::post('username',false,''))){
-					$exists = Ddm_Db::getReadConn()->count($saveAdmin->getResource()->getMainTable(),array('admin_name'=>$adminName,array('admin_id'=>array('<>'=>$saveAdmin->getId()))));
+					$exists = Ddm_Db::table($saveAdmin->getResource()->getMainTable(), true)->where('admin_name','=',$adminName)->where('admin_id','!=',$saveAdmin->getId())->exists();
 					if($exists){
 						$this->getNotice()->addError(Ddm::getTranslate('admin')->translate('您填写的用户名已经存在了'));
 						$error = true;

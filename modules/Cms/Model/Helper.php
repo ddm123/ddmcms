@@ -89,7 +89,7 @@ class Cms_Model_Helper {
 			$onepage->setLanguageId(Ddm::getLanguage()->language_id)
 				->addAttributeToSelect('title')
 				->addAttributeToFilter('is_enabled',1);
-			foreach($onepage->getSelect()->fetchAll() as $opt){
+			foreach($onepage->getSelect()->get() as $opt){
 				$this->_onepageOptions[] = array('value'=>$opt['onepage_id'],'label'=>$opt['title']);
 			}
 		}
@@ -105,10 +105,10 @@ class Cms_Model_Helper {
 		if($onepageUrls===false){
 			$onepageUrls = array();
 			if($urlKeyAttribute = Ddm::getHelper('core')->getEntityAttribute('onepage','url_key')){
-				$result = Ddm_Db::getReadConn()->getSelect()
-					->from($urlKeyAttribute->getTable(),array('entity_id','language_id','value'))
-					->where('attribute_id',$urlKeyAttribute->attribute_id)
-					->fetchAll();
+				$result = Ddm_Db::table($urlKeyAttribute->getTable(), true)
+					->select(array('entity_id','language_id','value'))
+					->where('attribute_id','=',$urlKeyAttribute->attribute_id)
+					->get();
 				foreach($result as $row){
 					isset($onepageUrls[$row['value']]) or $onepageUrls[$row['value']] = array();
 					$onepageUrls[$row['value']][$row['language_id']] = $row['entity_id'];

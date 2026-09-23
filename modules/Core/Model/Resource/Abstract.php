@@ -41,6 +41,7 @@ abstract class Core_Model_Resource_Abstract {
 	 */
 	protected function _getSelect(){
 		$this->_select = Ddm_Db::table(array('main_table'=>$this->getMainTableName()));
+		$this->_select->select(array('main_table.*'));
 		return $this->_select;
 	}
 

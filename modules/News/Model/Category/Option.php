@@ -40,12 +40,11 @@ class News_Model_Category_Option extends Core_Model_Attribute_Source_Abstract {
 			$this->_optionsFromLanguage[$languageId] = array();
 			$category = new News_Model_Category();
 			$category->setLanguageId($languageId)->getSelect()
-				->resetColumns()
-				->columns(array('category_id','position'),'main_table')
-				->order("main_table.position ASC");
+				->select(array('main_table.category_id','main_table.position'))
+				->orderBy("main_table.position", "ASC");
 			$category->addAttributeToSelect('name');
 
-			foreach($category->getSelect()->fetchAll() as $item){
+			foreach($category->getSelect()->get() as $item){
 				$this->_optionsFromLanguage[$languageId][] = array('value'=>$item['category_id'],'label'=>$item['name']);
 			}
 		}

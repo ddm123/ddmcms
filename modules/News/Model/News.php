@@ -34,14 +34,21 @@ class News_Model_News extends Core_Model_Entity {
 		if($attribute){
 			$languageId = intval($this->language_id===NULL ? Ddm::getLanguage()->language_id : $this->language_id);
 			$this->getSelect()
-				->leftJoin(array('category_name_d'=>$attribute->getTable()),
-					"category_name_d.entity_id=main_table.`category_id` AND category_name_d.attribute_id='".$attribute->attribute_id."' AND category_name_d.language_id='0'",
-					$languageId ? NULL : array('category_name'=>'value'));
+				->leftJoin(array('category_name_d'=>$attribute->getTable(),true),function(Ddm_Db_JoinClause $join) use($attribute){
+					$join->on('category_name_d.entity_id','=','main_table.category_id');
+					$join->where('category_name_d.attribute_id','=',$attribute->attribute_id);
+					$join->where('category_name_d.language_id','=',0);
+				});
 			if($languageId){
 				$this->getSelect()
-					->leftJoin(array('category_name_l'=>$attribute->getTable()),
-						"category_name_l.entity_id=main_table.`category_id` AND category_name_l.attribute_id='".$attribute->attribute_id."' AND category_name_l.language_id='$languageId'",
-					array('category_name'=>new Ddm_Db_Expression('IFNULL(category_name_l.`value`,category_name_d.`value`)')));
+					->leftJoin(array('category_name_l'=>$attribute->getTable(),true),function(Ddm_Db_JoinClause $join) use($attribute,$languageId){
+						$join->on('category_name_l.entity_id','=','main_table.category_id');
+						$join->where('category_name_l.attribute_id','=',$attribute->attribute_id);
+						$join->where('category_name_l.language_id','=',$languageId);
+					})
+					->addSelect(array('category_name'=>new Ddm_Db_Expression('IFNULL(category_name_l.value,category_name_d.value)')));
+			}else{
+				$this->getSelect()->addSelect(array('category_name'=>'category_name_d.value'));
 			}
 		}
 		return $this;
@@ -55,14 +62,21 @@ class News_Model_News extends Core_Model_Entity {
 		if($attribute){
 			$languageId = intval($this->language_id===NULL ? Ddm::getLanguage()->language_id : $this->language_id);
 			$this->getSelect()
-				->leftJoin(array('category_url_d'=>$attribute->getTable()),
-					"category_url_d.entity_id=main_table.`category_id` AND category_url_d.attribute_id='".$attribute->attribute_id."' AND category_url_d.language_id='0'",
-					$languageId ? NULL : array('category_url'=>'value'));
+				->leftJoin(array('category_url_d'=>$attribute->getTable(),true),function(Ddm_Db_JoinClause $join) use($attribute){
+					$join->on('category_url_d.entity_id','=','main_table.category_id');
+					$join->where('category_url_d.attribute_id','=',$attribute->attribute_id);
+					$join->where('category_url_d.language_id','=',0);
+				});
 			if($languageId){
 				$this->getSelect()
-					->leftJoin(array('category_url_l'=>$attribute->getTable()),
-						"category_url_l.entity_id=main_table.`category_id` AND category_url_l.attribute_id='".$attribute->attribute_id."' AND category_url_l.language_id='$languageId'",
-					array('category_url'=>new Ddm_Db_Expression('IFNULL(category_url_l.`value`,category_url_d.`value`)')));
+					->leftJoin(array('category_url_l'=>$attribute->getTable(),true),function(Ddm_Db_JoinClause $join) use($attribute,$languageId){
+						$join->on('category_url_l.entity_id','=','main_table.category_id');
+						$join->where('category_url_l.attribute_id','=',$attribute->attribute_id);
+						$join->where('category_url_l.language_id','=',$languageId);
+					})
+					->addSelect(array('category_url'=>new Ddm_Db_Expression('IFNULL(category_url_l.value,category_url_d.value)')));
+			}else{
+				$this->getSelect()->addSelect(array('category_url'=>'category_url_d.value'));
 			}
 		}
 		return $this;
@@ -96,7 +110,7 @@ class News_Model_News extends Core_Model_Entity {
 	 * @return News_Model_News
 	 */
 	public function addCategoryToFilter($categoryId){
-		$this->getSelect()->where('main_table.category_id',(int)$categoryId);
+		$this->getSelect()->where('main_table.category_id','=',(int)$categoryId);
 		return $this;
 	}
 

@@ -55,7 +55,7 @@ class News_Model_Resource_News extends Core_Model_Resource_Entity {
 		$_news = new News_Model_News();
 		$result = $_news->setLanguageId($news->language_id)->addAttributeToSelect('url_key')
 			->addAttributeToFilter('url_key',$urlKey)
-			->getSelect()->fetchOne(false);
+			->getSelect()->first();
 		if($result){
 			$news->addData($result)->setOrigData($result,NULL,true);
 		}

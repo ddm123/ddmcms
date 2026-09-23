@@ -110,7 +110,6 @@ class Ddm_Object{
 
 	/**
 	 * @param string|null $name
-	 * @param mixed $value
 	 * @return Ddm_Object
 	 */
 	public function unsetData($name = NULL){

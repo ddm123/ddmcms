@@ -203,12 +203,10 @@ class Language_Controller_Adminhtml_Index extends Admin_Controller_Abstract {
 		if(strtolower($defaultLanguage['language_code'])==strtolower($languageCode)){
 			$result = true;
 		}else{
-			$where = array('language_code'=>$languageCode);
-			if($languageId)$where['language_id'] = array('<>'=>$languageId);
-			$result = (bool)Ddm_Db::getReadConn()->getSelect()
-				->from(Ddm_Db::getTable('language'),'language_id')
-				->where($where)->limit(1)
-				->fetchOne(true);
+			$builder = Ddm_Db::table('language');
+			$builder->where('language_code','=',$languageCode);
+			if($languageId)$builder->where('language_id','!=',$languageId);
+			$result = (bool)$builder->value('language_id');
 		}
 		return $result;
 	}

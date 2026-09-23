@@ -8,7 +8,8 @@
  */
 
 class Admin_Block_Grid extends Core_Block_Abstract {
-	private $_select = NULL;//Ddm_Db_Select
+	/** @var Ddm_Db_Builder */
+	private $_select = NULL;
 	private $_startRow = 0;
 
 	protected $_columns = array();
@@ -278,10 +279,10 @@ class Admin_Block_Grid extends Core_Block_Abstract {
 	}
 
 	/**
-	 * @param Ddm_Db_Select $select
+	 * @param Ddm_Db_Builder $select
 	 * @return Admin_Block_Grid
 	 */
-	public function setSelect(Ddm_Db_Select $select){
+	public function setSelect(Ddm_Db_Builder $select){
 		$this->_select = $select;
 		return $this;
 	}
@@ -298,7 +299,7 @@ class Admin_Block_Grid extends Core_Block_Abstract {
 	}
 
 	/**
-	 * @return Ddm_Db_Select
+	 * @return Ddm_Db_Builder|null
 	 */
 	public function getSelect(){
 		return $this->_select;
@@ -329,10 +330,7 @@ class Admin_Block_Grid extends Core_Block_Abstract {
 		if($this->totalRows===NULL){
 			if($this->_select){
 				$this->_parseFilter()->_parseSort();
-				$sel = clone $this->_select;
-				$sel->resetColumns()->reset(Ddm_Db_Select::DISTINCT)->reset(Ddm_Db_Select::ORDER)->reset(Ddm_Db_Select::LIMIT)
-					->columns(array('t'=>new Ddm_Db_Expression('COUNT(*)')));
-				$this->totalRows = Ddm_Db::getReadConn()->fetchOne($sel->__toString(),true);
+				$this->totalRows = $this->_select->count();
 			}
 		}
 		return $this->totalRows;
@@ -349,7 +347,7 @@ class Admin_Block_Grid extends Core_Block_Abstract {
 					$this->_parseFilter()->_parseSort();
 
 					if($this->defaultLimit = (int)$this->defaultLimit){
-						$pageLink = $this->createBlock('core','pagelink');/* @var $pageLink Core_Block_Pagelink */
+						$pageLink = $this->createBlock('core','pagelink');/** @var Core_Block_Pagelink $pageLink */
 						$this->defaultPage = (int)$this->defaultPage;
 						if($this->defaultPage>1){
 							$p = (int)Ddm_Request::get($pageLink->pageVarName);
@@ -357,7 +355,7 @@ class Admin_Block_Grid extends Core_Block_Abstract {
 						}
 
 						list($this->_startRow,$totalPage) = $pageLink->parseVars($this->defaultLimit,$this->getTotalRows());
-						$this->_select->limit($this->_startRow,$this->defaultLimit);
+						$this->_select->limit($this->defaultLimit, $this->_startRow);
 						$pageLink->setTotalPage($totalPage);
 						if($this->getIsShowTotalRecords()){
 							$pageLink->beforeHtml = Ddm::getTranslate('core')->___('共有%s条记录',' <strong>'.$this->getTotalRows().' </strong>');
@@ -365,7 +363,7 @@ class Admin_Block_Grid extends Core_Block_Abstract {
 						$this->addBlock($pageLink,'pagelink');
 					}
 
-					$this->_listData = Ddm_Db::getReadConn()->fetchAll($this->_select->__toString(),$this->primaryKey);
+					$this->_listData = $this->_select->get(NULL,$this->primaryKey);
 				}else{
 					$this->_listData = array();
 				}
@@ -496,13 +494,13 @@ class Admin_Block_Grid extends Core_Block_Abstract {
 	/**
 	 * @param array $columnOption
 	 * @param mixed $value
-	 * @return mixed
+	 * @return array array($operator, $value)
 	 */
 	public function getCondition(array $columnOption,$value){
-		if($value instanceof Ddm_Db_Expression || is_array($value))return $value;
+		if($value instanceof Ddm_Db_Expression || is_array($value))return array('=',$value);
 		return $columnOption['type']=='currency' || $columnOption['type']=='number' || $columnOption['type']=='bool'
-			? $value + 0
-			: array('like'=>new Ddm_Db_Expression(Ddm_Db::getReadConn()->quote('%'.strtr($value,array('%'=>'\\%','_'=>'\\_')).'%')));
+			? array('=',$value + 0)
+			: array('like','%'.strtr($value,array('%'=>'\\%','_'=>'\\_')).'%');
 	}
 
 	/**
@@ -590,8 +588,10 @@ class Admin_Block_Grid extends Core_Block_Abstract {
 				call_user_func($column['filter_callback'],$this->_select,$columnName,$this->_filterWhere[$columnName]);
 			else if($this->_listBlock)
 				$this->_listBlock->applyFilter($column,$columnName,$this->_filterWhere[$columnName]);
-			else
-				$this->_select->where($columnName,$this->getCondition($column,$this->_filterWhere[$columnName]));
+			else{
+				list($operator,$value) = $this->getCondition($column,$this->_filterWhere[$columnName]);
+				$this->_select->where($columnName,$operator,$value);
+			}
 		}
 		return $this;
 	}

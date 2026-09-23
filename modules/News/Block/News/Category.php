@@ -35,8 +35,8 @@ class News_Block_News_Category extends Core_Block_Abstract {
 			$this->_categories = $category->setLanguageId(Ddm::getLanguage()->language_id)
 				->addAttributeToSelect('name')
 				->addAttributeToSelect('url_key')
-				->getSelect()->order("main_table.position ASC")
-				->fetchAll();
+				->getSelect()->orderBy('main_table.position','ASC')
+				->get();
 		}
 		return $this->_categories;
 	}

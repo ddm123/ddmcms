@@ -84,7 +84,7 @@ abstract class Core_Model_Abstract extends Ddm_Object {
 	 * @return Core_Model_Abstract
 	 */
 	public function setLimit($rowCount,$offset = 0){
-		$this->getSelect()->limit((int)$offset, (int)$rowCount);
+		$this->getSelect()->limit((int)$rowCount, (int)$offset);
 		return $this;
 	}
 
@@ -96,6 +96,7 @@ abstract class Core_Model_Abstract extends Ddm_Object {
 	}
 
 	/**
+	 * @param int $id
 	 * @return Core_Model_Abstract
 	 */
 	public function setId($id){

@@ -125,7 +125,7 @@ abstract class Core_Model_Resource_Entity extends Core_Model_Resource_Abstract {
 						"LEFT JOIN ".Ddm_Db::getTable('attribute')." AS b ON(b.attribute_id=a.attribute_id) ".
 						"WHERE a.entity_id='$id' AND a.language_id".($languageId ? " IN(0,$languageId)" : '=0')." AND a.attribute_id IN(".implode(',',array_keys($attributes)).")";
 			}
-			foreach(Ddm_Db::getReadConn()->fetchAll($sql) as $row){
+			foreach(Ddm_Db::getReadConn()->query($sql) as $row){
 				if($row['attribute_id']){
 					isset($attributesValue[$row['language_id']]) or $attributesValue[$row['language_id']] = array();
 					$attributesValue[$row['language_id']][$row['attribute_code']] = $attributes[$row['attribute_id']]->getValue($row['value'],$row['backend_type']);

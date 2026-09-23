@@ -69,10 +69,9 @@ class News_Model_Category extends Core_Model_Entity {
 		if(empty($fieldName)){
 			throw new Exception('Field name can not be empty');
 		}
-		$sql = Ddm_Db::getReadConn()->getSelect()
-			->from(Ddm_Db::getTable('news_category'),'category_id')
-			->where($fieldName,$value);
-		return Ddm_Db::getReadConn()->fetchOne("SELECT EXISTS($sql) AS `exist`",true)=='1';
+		return Ddm_Db::table('news_category')
+			->where($fieldName,'=',$value)
+			->exists();
 	}
 
 	protected function _beforeSave(){

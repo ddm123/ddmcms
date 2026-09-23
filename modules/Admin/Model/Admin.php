@@ -274,10 +274,9 @@ class Admin_Model_Admin extends Core_Model_Abstract {
 
 	protected function _beforeSave(){
 		if($this->groups_position){
-			$groupIds = Ddm_Db::getReadConn()->getSelect()
-				->from(Ddm_Db::getTable('admin_group'),'group_id')
-				->where('group_id',array_keys($this->groups_position))
-				->fetchPairs();
+			$groupIds = Ddm_Db::table(Ddm_Db::getTable('admin_group'))
+				->whereIn('group_id',array_keys($this->groups_position))
+				->pluck(array('group_id'));
 			if($groupIds){
 				foreach($this->groups_position as $groupId=>$position){
 					if(!in_array($groupId,$groupIds))unset($this->groups_position[$groupId]);

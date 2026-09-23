@@ -21,8 +21,7 @@ class Admin_Block_Admin_Group_List extends Admin_Block_List_Abstract {
 		$this->_grid->getFieldValueUrl = '';
 		$this->_grid->saveFieldValueUrl = Ddm::getLanguage()->getUrl('*/*/save-field-value');
 
-		$select = Ddm_Db::getReadConn()->getSelect();
-		$select->from(array('g'=>Ddm_Db::getTable('admin_group')));
+		$select = Ddm_Db::table(array('g'=>'admin_group'));
 		$this->_grid->setSelect($select);
 
 		$this->_loggedInAdminGroups = Admin_Model_Admin::loggedInAdmin()->getGroups();
@@ -85,14 +84,13 @@ class Admin_Block_Admin_Group_List extends Admin_Block_List_Abstract {
 			$groupIds = array();
 			foreach($listData as $row)$groupIds[] = $row['group_id'];
 
-			$select = Ddm_Db::getReadConn()->getSelect();
-			$select->from(array('g'=>Ddm_Db::getTable('admin_group')),array('group_id','count'=>'COUNT(*)'))
-				->innerJoin(array('gu'=>Ddm_Db::getTable('admin_group_user')),"gu.group_id=g.group_id")
-				->group('g.group_id')->where('g.group_id',array('in'=>$groupIds));
-			$groupCounts = Ddm_Db::getReadConn()->fetchAll($select->__toString(),'group_id');
+			$select = Ddm_Db::table(array('g'=>'admin_group'));
+			$select->join(array('gu'=>'admin_group_user'),'gu.group_id','=','g.group_id');
+			$select->groupBy('g.group_id')->whereIn('g.group_id',$groupIds);
+			$groupCounts = $select->get(array('g.group_id','count'=>new Ddm_Db_Expression('COUNT(*)')),'group_id');
 
 			foreach($listData as $key=>$row){
-				$listData[$key]['count'] = isset($groupCounts[$row['group_id']]) ? isset($groupCounts[$row['group_id']]) : 0;
+				$listData[$key]['count'] = isset($groupCounts[$row['group_id']]) ? $groupCounts[$row['group_id']]['count'] : 0;
 			}
 			$this->getGrid()->setListData($listData);
 		}

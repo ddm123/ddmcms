@@ -8,6 +8,8 @@
  */
 
 class Ddm_Db_Expression {
+
+	/** @var string */
 	protected $_expression = '';
 
 	/**

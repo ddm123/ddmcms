@@ -51,6 +51,20 @@ class Ddm_Db_Builder {
 	}
 
 	/**
+	 * @return string
+	 */
+	public function getTableName(){
+		return $this->_table;
+	}
+
+	/**
+	 * @return string|null
+	 */
+	public function getTableAlias(){
+		return $this->_tableAlias;
+	}
+
+	/**
 	 * @param string|array $columns
 	 * @return Ddm_Db_Builder
 	 */
@@ -72,13 +86,24 @@ class Ddm_Db_Builder {
 	/**
 	 * 查询多行
 	 * @param string|array $columns
+	 * @param string|Closure|null $indexBy
 	 * @return array
 	 */
-	public function get($columns = array()){
+	public function get($columns = array(), $indexBy = NULL){
 		if($columns)$this->select($columns);
 		$bindings = array();
 		$sql = $this->_compileSelect($bindings);
-		return $this->_read($sql,$bindings)->fetchAll(PDO::FETCH_ASSOC);
+		$stmt = $this->_read($sql,$bindings);
+
+		if(!$indexBy)return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+		$result = array();
+		if($indexBy instanceof Closure){
+			while($row = $stmt->fetch(PDO::FETCH_ASSOC)) $result[$indexBy($row)] = $row;
+		}else{
+			while($row = $stmt->fetch(PDO::FETCH_ASSOC)) $result[$row[$indexBy]] = $row;
+		}
+		return $result;
 	}
 
 	/**
@@ -87,7 +112,7 @@ class Ddm_Db_Builder {
 	 * @return array|null
 	 */
 	public function first($columns = array()){
-		$rows = $this->limit(1)->get($columns);
+		$rows = $this->limit(1,0)->get($columns);
 		return $rows ? $rows[0] : NULL;
 	}
 
@@ -108,12 +133,17 @@ class Ddm_Db_Builder {
 	 * @return array
 	 */
 	public function pluck($column,$key = NULL){
-		$columns = $key===NULL ? array($column) : array($column,$key);
-		$rows = $this->get($columns);
+		$columns = $key===NULL ? array('v' => $column) : array('v' => $column, 'k' => $key);
+		$bindings = array();
+		$this->select($columns);
+		$sql = $this->_compileSelect($bindings);
+		$stmt = $this->_read($sql,$bindings,PDO::FETCH_NUM);
+
 		$result = array();
-		foreach($rows as $row){
-			if($key===NULL)$result[] = $row[$column];
-			else $result[$row[$key]] = $row[$column];
+		if($key){
+			while($row = $stmt->fetch(PDO::FETCH_NUM)) $result[$row[1]] = $row[0];
+		}else{
+			while($row = $stmt->fetch(PDO::FETCH_NUM)) $result[] = $row[0];
 		}
 		return $result;
 	}
@@ -121,18 +151,22 @@ class Ddm_Db_Builder {
 	/**
 	 * 获取单个值
 	 * @param string $column
-	 * @return mixed|null
+	 * @return string|null|false 如果没有查询到任何记录则返回false
 	 */
 	public function value($column){
-		$row = $this->first(array($column));
-		return $row ? reset($row) : NULL;
+		$bindings = array();
+		$this->select(array('v' => $column))->limit(1,0);
+		$sql = $this->_compileSelect($bindings);
+		$stmt = $this->_read($sql,$bindings,PDO::FETCH_NUM);
+		$row = $stmt->fetch(PDO::FETCH_NUM);
+		return $row ? $row[0] : false;
 	}
 
 	/**
-	 * 获取当前SELECT语句(不含绑定值), 便于调试
+	 * 获取当前SELECT语句
 	 * @return string
 	 */
-	public function toSql(){
+	public function toSql(array &$bindings = array()){
 		$bindings = array();
 		return $this->_compileSelect($bindings);
 	}
@@ -148,7 +182,7 @@ class Ddm_Db_Builder {
 		$sql = 'SELECT COUNT('.$column.') AS '.$this->wrap('aggregate').' '.$this->_compileFrom($bindings);
 		if($this->_groups)$sql .= ' GROUP BY '.$this->_compileGroups();
 		if($this->_havings)$sql .= ' HAVING '.$this->_compileHavings($bindings);
-		$row = $this->_read($sql,$bindings)->fetch(PDO::FETCH_ASSOC);
+		$row = $this->_read($sql.' LIMIT 1', $bindings)->fetch(PDO::FETCH_ASSOC);
 		return (int)$row['aggregate'];
 	}
 
@@ -171,8 +205,20 @@ class Ddm_Db_Builder {
 	 */
 	public function where($column,$operator = NULL,$value = NULL,$boolean = 'and'){
 		if($column instanceof Closure)return $this->_whereNested($column,$boolean);
-		if(func_num_args()===2){ $value = $operator; $operator = '='; }
-		return $this->_addWhere('basic',$column,$operator,$value,$boolean);
+
+		$type = 'basic';
+		if(func_num_args()<=2){
+			$value = $operator;
+			if(is_array($value)){
+				$type = 'in';
+				$operator = NULL;
+			}else{
+				$operator = '=';
+			}
+		}else if($operator===NULL && is_array($value)){
+			$type = 'in';
+		}
+		return $this->_addWhere($type,$column,$operator,$value,$boolean);
 	}
 
 	/**
@@ -182,9 +228,7 @@ class Ddm_Db_Builder {
 	 * @return Ddm_Db_Builder
 	 */
 	public function orWhere($column,$operator = NULL,$value = NULL){
-		if($column instanceof Closure)return $this->_whereNested($column,'or');
-		if(func_num_args()===2){ $value = $operator; $operator = '='; }
-		return $this->_addWhere('basic',$column,$operator,$value,'or');
+		return $this->where($column,$operator,$value,'or');
 	}
 
 	/**
@@ -203,7 +247,9 @@ class Ddm_Db_Builder {
 	 * @param array $values
 	 * @return Ddm_Db_Builder
 	 */
-	public function orWhereIn($column,$values){ return $this->whereIn($column,$values,'or'); }
+	public function orWhereIn($column,$values){
+		return $this->whereIn($column,$values,'or');
+	}
 
 	/**
 	 * @param string $column
@@ -211,14 +257,18 @@ class Ddm_Db_Builder {
 	 * @param string $boolean
 	 * @return Ddm_Db_Builder
 	 */
-	public function whereNotIn($column,$values,$boolean = 'and'){ return $this->whereIn($column,$values,$boolean,true); }
+	public function whereNotIn($column,$values,$boolean = 'and'){
+		return $this->whereIn($column,$values,$boolean,true);
+	}
 
 	/**
 	 * @param string $column
 	 * @param array $values
 	 * @return Ddm_Db_Builder
 	 */
-	public function orWhereNotIn($column,$values){ return $this->whereNotIn($column,$values,'or'); }
+	public function orWhereNotIn($column,$values){
+		return $this->whereNotIn($column,$values,'or');
+	}
 
 	/**
 	 * @param string $column
@@ -234,20 +284,38 @@ class Ddm_Db_Builder {
 	 * @param string $column
 	 * @return Ddm_Db_Builder
 	 */
-	public function orWhereNull($column){ return $this->whereNull($column,'or'); }
+	public function orWhereNull($column){
+		return $this->whereNull($column,'or');
+	}
 
 	/**
 	 * @param string $column
 	 * @param string $boolean
 	 * @return Ddm_Db_Builder
 	 */
-	public function whereNotNull($column,$boolean = 'and'){ return $this->whereNull($column,$boolean,true); }
+	public function whereNotNull($column,$boolean = 'and'){
+		return $this->whereNull($column,$boolean,true);
+	}
 
 	/**
 	 * @param string $column
 	 * @return Ddm_Db_Builder
 	 */
-	public function orWhereNotNull($column){ return $this->whereNotNull($column,'or'); }
+	public function orWhereNotNull($column){
+		return $this->whereNotNull($column,'or');
+	}
+
+	/**
+	 * @param string $column
+	 * @param string $from
+	 * @param string $to
+	 * @param string $boolean
+	 * @param bool $not
+	 * @return Ddm_Db_Builder
+	 */
+	public function whereBetween($column,$from,$to,$boolean = 'and',$not = false){
+		return $this->_addWhere($not ? 'notbetween' : 'between',$column,NULL,array($from,$to),$boolean);
+	}
 
 	/**
 	 * @param string|Ddm_Db_Expression $column
@@ -255,9 +323,13 @@ class Ddm_Db_Builder {
 	 * @return Ddm_Db_Builder
 	 */
 	public function orderBy($column,$direction = 'asc'){
-		$direction = strtoupper($direction);
-		if($direction!=='ASC' && $direction!=='DESC')$direction = 'ASC';
-		$this->_orders[] = ($column instanceof Ddm_Db_Expression ? (string)$column : $this->wrap($column)).' '.$direction;
+		if($column===NULL){
+			$this->_orders[] = 'NULL';
+		}else{
+			$direction = strtoupper($direction);
+			if($direction!=='ASC' && $direction!=='DESC')$direction = 'ASC';
+			$this->_orders[] = ($column instanceof Ddm_Db_Expression ? (string)$column : $this->wrap($column)).' '.$direction;
+		}
 		return $this;
 	}
 
@@ -429,10 +501,11 @@ class Ddm_Db_Builder {
 	/**
 	 * @param string $sql
 	 * @param array $bindings
+	 * @param int $fetchMode
 	 * @return PDOStatement
 	 */
-	protected function _read($sql,array $bindings){
-		return Ddm_Db::getReadConn()->query($sql,$bindings,PDO::FETCH_ASSOC);
+	protected function _read($sql,array $bindings,$fetchMode = PDO::FETCH_ASSOC){
+		return Ddm_Db::getReadConn()->query($sql,$bindings,$fetchMode);
 	}
 
 	/**
@@ -444,7 +517,8 @@ class Ddm_Db_Builder {
 	 * @return Ddm_Db_Builder
 	 */
 	protected function _addWhere($type,$column,$operator,$value,$boolean){
-		$this->_wheres[] = array('type'=>$type,'column'=>$column,'operator'=>$operator,'value'=>$value,'boolean'=>$boolean);
+		$boolean = strtolower($boolean)==='or' ? 'or' : 'and';
+		$this->_wheres[] = array('type'=>$type,'column'=>$column,'operator'=>$operator ?: '=','value'=>$value,'boolean'=>$boolean);
 		return $this;
 	}
 
@@ -456,6 +530,7 @@ class Ddm_Db_Builder {
 	protected function _whereNested($callback,$boolean){
 		$query = new self($this->_table,$this->_tableAlias);
 		$callback($query);
+		$boolean = strtolower($boolean)==='or' ? 'or' : 'and';
 		$this->_wheres[] = array('type'=>'nested','query'=>$query,'boolean'=>$boolean);
 		return $this;
 	}
@@ -468,7 +543,8 @@ class Ddm_Db_Builder {
 	 * @return Ddm_Db_Builder
 	 */
 	protected function _addHaving($column,$operator,$value,$boolean){
-		$this->_havings[] = array('column'=>$column,'operator'=>$operator,'value'=>$value,'boolean'=>$boolean);
+		$boolean = strtolower($boolean)==='or' ? 'or' : 'and';
+		$this->_havings[] = array('column'=>$column,'operator'=>$operator ?: '=','value'=>$value,'boolean'=>$boolean);
 		return $this;
 	}
 
@@ -493,13 +569,13 @@ class Ddm_Db_Builder {
 	 * @param array $bindings
 	 * @return string
 	 */
-	protected function _compileSelect(&$bindings){
+	protected function _compileSelect(array &$bindings){
 		$sql = 'SELECT '.$this->_compileColumns().' '.$this->_compileFrom($bindings);
 		if($this->_groups)$sql .= ' GROUP BY '.$this->_compileGroups();
 		if($this->_havings)$sql .= ' HAVING '.$this->_compileHavings($bindings);
 		if($this->_orders)$sql .= ' ORDER BY '.implode(', ',$this->_orders);
 		if($this->_limit!==NULL)$sql .= ' LIMIT '.$this->_limit;
-		if($this->_offset!==NULL)$sql .= ' OFFSET '.$this->_offset;
+		if($this->_offset)$sql .= ' OFFSET '.$this->_offset;
 		return $sql;
 	}
 
@@ -507,7 +583,7 @@ class Ddm_Db_Builder {
 	 * @param array $bindings
 	 * @return string
 	 */
-	protected function _compileFrom(&$bindings){
+	protected function _compileFrom(array &$bindings){
 		$sql = 'FROM '.$this->_compileTable($this->_table,$this->_tableAlias);
 		foreach($this->_joins as $join)$sql .= ' '.$this->_compileJoin($bindings,$join);
 		$wheres = $this->_compileWheres($bindings);
@@ -520,7 +596,7 @@ class Ddm_Db_Builder {
 	 * @param Ddm_Db_JoinClause $join
 	 * @return string
 	 */
-	protected function _compileJoin(&$bindings,$join){
+	protected function _compileJoin(array &$bindings,$join){
 		return $join->getType().' JOIN '.$this->_compileTable($join->getTable(),$join->getTableAlias()).' ON '.$this->_compileJoinConditions($bindings,$join->getConditions());
 	}
 
@@ -529,7 +605,7 @@ class Ddm_Db_Builder {
 	 * @param array $conditions
 	 * @return string
 	 */
-	protected function _compileJoinConditions(&$bindings,$conditions){
+	protected function _compileJoinConditions(array &$bindings,$conditions){
 		$parts = array();
 		foreach($conditions as $i=>$condition){
 			$boolean = $i===0 ? '' : strtoupper($condition['boolean']).' ';
@@ -559,7 +635,11 @@ class Ddm_Db_Builder {
 	 * @return string
 	 */
 	protected function _compileColumns(){
-		if(empty($this->_columns))return '*';
+		if(empty($this->_columns)){
+			if(!$this->_joins)return '*';
+
+			$this->_columns = array(($this->_tableAlias ?: $this->_table).'.*');
+		}
 		$columns = array();
 		foreach($this->_columns as $alias=>$column){
 			$columns[] = $this->_compileColumn($column,is_string($alias) ? $alias : NULL);
@@ -604,7 +684,7 @@ class Ddm_Db_Builder {
 	 */
 	protected function _compileTable($table,$alias = NULL){
 		$sql = $this->wrap($table);
-		if($alias!==NULL)$sql .= ' AS '.$this->wrap($alias);
+		if($alias)$sql .= ' AS '.$this->wrap($alias);
 		return $sql;
 	}
 
@@ -612,7 +692,7 @@ class Ddm_Db_Builder {
 	 * @param array $bindings
 	 * @return string
 	 */
-	protected function _compileWheres(&$bindings){
+	protected function _compileWheres(array &$bindings){
 		if(!$this->_wheres)return '';
 		$parts = array();
 		foreach($this->_wheres as $where){
@@ -628,7 +708,7 @@ class Ddm_Db_Builder {
 	 * @param array $where
 	 * @return string
 	 */
-	protected function _compileWhere(&$bindings,$where){
+	protected function _compileWhere(array &$bindings,$where){
 		switch($where['type']){
 			case 'nested':
 				$sub = array();
@@ -650,6 +730,21 @@ class Ddm_Db_Builder {
 			case 'null':
 			case 'notnull':
 				return $this->wrap($where['column']).($where['type']==='null' ? ' IS NULL' : ' IS NOT NULL');
+			case 'between':
+			case 'notbetween':
+				if($where['value'][0]===$where['value'][1])return $this->_compileBasic($bindings,$where['column'],'=',$where['value'][0]);
+				if($where['value'][0]===NULL && $where['value'][1]===NULL)return $this->wrap($where['column']).($where['type']==='between' ? ' IS NULL' : ' IS NOT NULL');
+				if($where['value'][0]===NULL){
+					$bindings[] = $where['value'][1];
+					return $this->wrap($where['column']).($where['type']==='between' ? ' <= ?' : ' >= ?');
+				}
+				if($where['value'][1]===NULL){
+					$bindings[] = $where['value'][0];
+					return $this->wrap($where['column']).($where['type']==='between' ? ' >= ?' : ' <= ?');
+				}
+				$bindings[] = $where['value'][0];
+				$bindings[] = $where['value'][1];
+				return $this->wrap($where['column']).($where['type']==='between' ? ' BETWEEN ? AND ?' : ' NOT BETWEEN ? AND ?');
 		}
 		return '';
 	}
@@ -661,7 +756,7 @@ class Ddm_Db_Builder {
 	 * @param mixed $value
 	 * @return string
 	 */
-	protected function _compileBasic(&$bindings,$column,$operator,$value){
+	protected function _compileBasic(array &$bindings,$column,$operator,$value){
 		$column = $this->wrap($column);
 		if($value instanceof Ddm_Db_Expression)return $column.' '.$operator.' '.$value;
 		if($value===NULL){
@@ -687,7 +782,7 @@ class Ddm_Db_Builder {
 	 * @param array $bindings
 	 * @return string
 	 */
-	protected function _compileHavings(&$bindings){
+	protected function _compileHavings(array &$bindings){
 		$parts = array();
 		foreach($this->_havings as $i=>$having){
 			$column = $having['column'] instanceof Ddm_Db_Expression ? (string)$having['column'] : $this->wrap($having['column']);
@@ -769,5 +864,13 @@ class Ddm_Db_Builder {
 		if($part==='*')return '*';
 		if($part!=='' && $part[0]===$quote && substr($part,-1)===$quote)return $part;
 		return $quote.str_replace($quote,$quote.$quote,$part).$quote;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function __toString()
+	{
+		return $this->toSql();
 	}
 }

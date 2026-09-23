@@ -21,8 +21,7 @@ class Admin_Block_Admin_User_List extends Admin_Block_List_Abstract {
 		$this->_grid->getFieldValueUrl = Ddm::getLanguage()->getUrl('*/*/get-field-value');
 		$this->_grid->saveFieldValueUrl = Ddm::getLanguage()->getUrl('*/*/save-field-value');
 
-		$select = Ddm_Db::getReadConn()->getSelect();
-		$select->from(array('a'=>Ddm_Db::getTable('admin_user')));
+		$select = Ddm_Db::table(array('a'=>Ddm_Db::getTable('admin_user')))->select(array('a.*'));
 		$this->_grid->setSelect($select);
 
 		$this->_loggedInAdminId = Admin_Model_Admin::loggedInAdmin()->getId();

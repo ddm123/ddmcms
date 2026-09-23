@@ -20,14 +20,23 @@ class Config_Model_Resource_Config extends Core_Model_Resource_Abstract {
 	 */
 	public function getConfigValue($path,$languageId){
 		$languageId = (int)$languageId;
-		$select = Ddm_Db::getReadConn()->getSelect();
-		$select->from(array('a'=>$this->getMainTable()), array('value'=>new Ddm_Db_Expression($languageId ? 'IFNULL(c.config_value,b.config_value)' : 'b.config_value')))
-			->leftJoin(array('b'=>Ddm_Db::getTable('config_value')),"b.config_id=a.config_id AND b.language_id='0'");
+		$select = Ddm_Db::table(array('a'=>$this->getMainTableName()));
+		$select->leftJoin(array('b'=>'config_value'),function(Ddm_Db_JoinClause $join){
+			$join->on('b.config_id','=','a.config_id');
+			$join->where('b.language_id','=',0);
+		});
 		if($languageId){
-			$select->leftJoin(array('c'=>Ddm_Db::getTable('config_value')),"c.config_id=a.config_id AND c.language_id='$languageId'");
+			$select->leftJoin(array('c'=>Ddm_Db::getTable('config_value')),function(Ddm_Db_JoinClause $join) use($languageId){
+				$join->on('c.config_id','=','a.config_id');
+				$join->where('c.language_id','=',$languageId);
+			});
+			$column = new Ddm_Db_Expression('IFNULL(c.config_value,b.config_value)');
+		}else{
+			$column = 'b.config_value';
 		}
-		$select->where('a.path',$path);
-		return $select->fetchOne(true);
+		$select->where('a.path','=',$path);
+		$value = $select->value($column);
+		return $value===false ? NULL : $value;
 	}
 
 	/**
@@ -37,11 +46,22 @@ class Config_Model_Resource_Config extends Core_Model_Resource_Abstract {
 	public function getConfigs($languageId){
 		$languageId = (int)$languageId;
 		$valueTable = Ddm_Db::getTable('config_value');
-		$select = Ddm_Db::getReadConn()->getSelect();
-		$select->from(array('a'=>$this->getMainTable()),array('path'=>'path','value'=>new Ddm_Db_Expression($languageId ? 'IFNULL(c.config_value,b.config_value)' : 'b.config_value')))
-			->leftJoin(array('b'=>$valueTable),"b.config_id=a.config_id AND b.language_id='0'");
-		if($languageId)$select->leftJoin (array('c'=>$valueTable),"c.config_id=a.config_id AND c.language_id='$languageId'");
-		return $select->fetchPairs();
+		$select = Ddm_Db::table(array('a'=>$this->getMainTableName()));
+		$select->leftJoin(array('b'=>'config_value'),function(Ddm_Db_JoinClause $join){
+			$join->on('b.config_id','=','a.config_id');
+			$join->where('b.language_id','=',0);
+		});
+		if($languageId){
+			$select->leftJoin(array('c'=>'config_value'),function(Ddm_Db_JoinClause $join) use($languageId){
+				$join->on('c.config_id','=','a.config_id');
+				$join->where('c.language_id','=',$languageId);
+			});
+			$column = new Ddm_Db_Expression('IFNULL(c.config_value,b.config_value)');
+		}else{
+			$column = 'b.config_value';
+		}
+
+		return $select->pluck($column,'a.path');
 	}
 
 	/**
@@ -49,11 +69,20 @@ class Config_Model_Resource_Config extends Core_Model_Resource_Abstract {
 	 * @return Config_Model_Resource_Config
 	 */
 	public function removeConfigValue($path){
-		$select = Ddm_Db::getReadConn()->getSelect();
-		$select->from($this->getMainTable(),'config_id')->where('path',$path);
-		if(Ddm_Db::getWriteConn()->delete(Ddm_Db::getTable('config_value'),array('config_id'=>array('IN'=>new Ddm_Db_Expression("($select)"))))){
-			Ddm_Db::getWriteConn()->delete($this->getMainTable(),array('path'=>$path));
-		}
+		$mainTable = $this->getMainTableName();
+		Ddm_Db::transaction(function() use($mainTable, $path){
+			$builder = Ddm_Db::table(array('a'=>$mainTable));
+
+			$sql = 'DELETE FROM '.$builder->wrap(Ddm_Db::getTable('config_value'));
+			$sql .= ' WHERE config_id IN(';
+			$sql .=   'SELECT a.config_id FROM '.$builder->wrap($mainTable).' AS a WHERE a.path=?';
+			$sql .= ')';
+			$stmt = Ddm_Db::getWriteConn()->query($sql, array($path));
+			if($stmt->rowCount()){
+				$builder->where('path','=',$path);
+				$builder->delete();
+			}
+		});
 		return $this;
 	}
 
@@ -64,15 +93,21 @@ class Config_Model_Resource_Config extends Core_Model_Resource_Abstract {
 	public function getConfigsFromLanguageId($languageId){
 		$languageId = (int)$languageId;
 		$valueTable = Ddm_Db::getTable('config_value');
-		$select = Ddm_Db::getReadConn()->getSelect();
-		$select->from(array('a'=>$this->getMainTable()),array('path'))
-			->leftJoin(array('b'=>$valueTable),"b.config_id=a.config_id AND b.language_id='0'",array('default_value'=>'config_value'));
+		$select = Ddm_Db::table(array('a'=>$this->getMainTableName()));
+		$select->leftJoin(array('b'=>'config_value'),function(Ddm_Db_JoinClause $join){
+			$join->on('b.config_id','=','a.config_id');
+			$join->where('b.language_id','=',0);
+		});
 		if($languageId){
-			$select->leftJoin(array('c'=>$valueTable),"c.config_id=a.config_id AND c.language_id='$languageId'",array('language_value'=>'config_value'));
+			$select->leftJoin(array('c'=>'config_value'),function(Ddm_Db_JoinClause $join) use($languageId){
+				$join->on('c.config_id','=','a.config_id');
+				$join->where('c.language_id','=',$languageId);
+			});
+			$columns = array('a.path','default_value'=>'b.config_value','language_value'=>'c.config_value');
 		}else{
-			$select->columns(array('language_value'=>'config_value'),'b');
+			$columns = array('a.path','default_value'=>'b.config_value','language_value'=>'b.config_value');
 		}
-		return $select->fetchAll('path');
+		return $select->get($columns, 'path');
 	}
 
 	/**
@@ -80,10 +115,10 @@ class Config_Model_Resource_Config extends Core_Model_Resource_Abstract {
 	 * @return array
 	 */
 	public function getConfigsFromPath($path){
-		$select = Ddm_Db::getReadConn()->getSelect();
-		$select->from(array('a'=>Ddm_Db::getTable('config_value')),array('language_id','config_value'))
-			->innerJoin(array('b'=>$this->getMainTable()),"b.config_id=a.config_id AND b.`path`='".addslashes($path)."'");
-		return $select->fetchPairs();
+		$select = Ddm_Db::table(array('a'=>'config_value'));
+		$select->join(array('b'=>$this->getMainTableName()),'b.config_id','=','a.config_id');
+		$select->where('b.path','=',$path);
+		return $select->pluck('a.config_value','a.language_id');
 	}
 
 	/**
@@ -91,10 +126,9 @@ class Config_Model_Resource_Config extends Core_Model_Resource_Abstract {
 	 * @return array
 	 */
 	public function getConfigsFromConfigId($configId){
-		$select = Ddm_Db::getReadConn()->getSelect();
-		$select->from(array('a'=>Ddm_Db::getTable('config_value')),array('language_id','config_value'))
-			->where('a.config_id',(int)$configId);
-		return $select->fetchPairs();
+		$select = Ddm_Db::table('config_value');
+		$select->where('config_id','=',(int)$configId);
+		return $select->pluck('config_value','language_id');
 	}
 
 	/**
@@ -103,11 +137,10 @@ class Config_Model_Resource_Config extends Core_Model_Resource_Abstract {
 	 * @return Config_Model_Resource_Config
 	 */
 	public function loadFromPath(Config_Model_Config $config,$path){
-		$select = Ddm_Db::getReadConn()->getSelect();
-		$select->from(array('a'=>$this->getMainTable()),array('config_id','path'))
-			->leftJoin(array('b'=>Ddm_Db::getTable('config_value')),"b.config_id=a.config_id",array('language_id','config_value'))
-			->where('a.path',$path);
-		if($data = $select->fetchAll()){
+		$select = Ddm_Db::table(array('a'=>$this->getMainTableName()));
+		$select->leftJoin(array('b'=>'config_value'),'b.config_id','=','a.config_id');
+		$select->where('a.path','=',$path);
+		if($data = $select->get(array('a.config_id','a.path','b.language_id','b.config_value'))){
 			$_data = array('values'=>array());
 			foreach($data as $row){
 				isset($_data['config_id']) or $_data['config_id'] = $row['config_id'];

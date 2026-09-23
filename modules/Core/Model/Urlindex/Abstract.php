@@ -111,8 +111,10 @@ abstract class Core_Model_Urlindex_Abstract {
 		}
 
 		if((int)$entityId){
-			$urlKeys = Ddm_Db::getReadConn()
-				->fetchPairs("SELECT language_id,`value` FROM ".$this->getUrlKeyAttribute()->getTable()." WHERE entity_id='".intval($entityId)."' AND attribute_id='".$this->getUrlKeyAttribute()->getId()."'");
+			$urlKeys = Ddm_Db::table($this->getUrlKeyAttribute()->getTable(),true)
+				->where('entity_id', '=', (int)$entityId)
+				->where('attribute_id', '=', (int)$this->getUrlKeyAttribute()->getId())
+				->pluck('value', 'language_id');
 			if($urlKeys){
 				foreach(Ddm::getLanguage()->getAllLanguage(false) as $language){
 					isset($urlKeys[$language['language_id']]) or $urlKeys[$language['language_id']] = $urlKeys[0];
@@ -145,10 +147,10 @@ abstract class Core_Model_Urlindex_Abstract {
 
 		$from = (int)$from;
 		$to = (int)$to;
-		$sql = "SELECT CONCAT(entity_id,'-',language_id) AS `key`,entity_id,language_id,`value` FROM ".$this->getUrlKeyAttribute()->getTable()." WHERE ";
-		$sql .= $from==$to ? "entity_id='$from'" : "entity_id BETWEEN $from AND $to";
-		$sql .= " AND attribute_id='".$this->getUrlKeyAttribute()->getId()."'";
-		$urlKeys = Ddm_Db::getReadConn()->fetchAll($sql,'key');
+		$urlKeys = Ddm_Db::table($this->getUrlKeyAttribute()->getTable(), true)
+			->whereBetween('entity_id',$from,$to)
+			->where('attribute_id', '=', (int)$this->getUrlKeyAttribute()->getId())
+			->get(array('key'=>new Ddm_Db_Expression('CONCAT(entity_id,'-',language_id)'),'entity_id','language_id','value'), 'key');
 		if($urlKeys){
 			$data = array();
 			$allLanguages = Ddm::getLanguage()->getAllLanguage(true);

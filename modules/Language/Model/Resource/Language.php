@@ -18,10 +18,9 @@ class Language_Model_Resource_Language extends Core_Model_Resource_Abstract {
 	 * @return array
 	 */
 	public function getAllLanguage($isEnable = true){
-		$sql = "SELECT language_id,language_code,language_name,`position` FROM ".$this->getMainTable();
-		if($isEnable)$sql .= " WHERE is_enable='1'";
-		$sql .= " ORDER BY `position` ASC";
-		return Ddm_Db::getReadConn()->fetchAll($sql, 'language_code');
+		$builder = Ddm_Db::table($this->getMainTableName())->orderBy('position', 'ASC');
+		if($isEnable)$builder->where('is_enable','=',1);
+		return $builder->get(array('language_id','language_code','language_name','position'), 'language_code');
 	}
 
 	/**
@@ -31,11 +30,11 @@ class Language_Model_Resource_Language extends Core_Model_Resource_Abstract {
 	 * @return array|false
 	 */
 	public function loadById($languageId,$isEnable = true){
-		$select = Ddm_Db::getReadConn()->getSelect();
-		$select->from($this->getMainTable(),'*')->where(is_numeric($languageId) ? 'language_id' : 'language_code', $languageId)->limit(1);
-		$isEnable and $select->where('is_enable','1');
+		$select = Ddm_Db::table($this->getMainTableName());
+		$select->where(is_numeric($languageId) ? 'language_id' : 'language_code', '=', $languageId)->limit(1);
+		$isEnable and $select->where('is_enable','=',1);
 
-		return Ddm_Db::getReadConn()->fetchOne($select->__toString());
+		return $select->first();
 	}
 
 	/**
@@ -43,21 +42,26 @@ class Language_Model_Resource_Language extends Core_Model_Resource_Abstract {
 	 */
 	public function getIdFromHost(){
 		$host = Ddm_Request::server()->HTTP_HOST or $host = Ddm_Request::server()->SERVER_NAME;
-		$select = Ddm_Db::getReadConn()->getSelect();
-		$select->from(array('a'=>Ddm_Db::getTable('config_value')), 'language_id')
-			->innerJoin(array('b'=>Ddm_Db::getTable('config')),"b.config_id=a.config_id AND b.`path`='web/base/web_url'")
-			->where('a.config_value',array('like'=>"%/$host/%"))->limit(1);
-		return Ddm_Db::getReadConn()->fetchOne($select->__toString(),true);
+		$select = Ddm_Db::table(array('a'=>'config_value'));
+		$select->join(array('b'=>'config'),function(Ddm_Db_JoinClause $join){
+			$join->on('b.config_id','=','a.config_id');
+			$join->where('b.path','=','web/base/web_url');
+		});
+		$select->where('a.config_value','like',"%/$host/%");
+		$select->limit(1);
+		return $select->value('a.language_id');
 	}
 
 	/**
 	 * @return array
 	 */
 	public function getAllBaseUrl(){
-		$select = Ddm_Db::getReadConn()->getSelect();
-		$select->from(array('a'=>Ddm_Db::getTable('config_value')), array('language_id','config_value'))
-			->innerJoin(array('b'=>Ddm_Db::getTable('config')),"b.config_id=a.config_id AND b.`path`='web/base/web_url'");
-		return $select->fetchPairs();
+		$select = Ddm_Db::table(array('a'=>'config_value'));
+		$select->join(array('b'=>'config'),function(Ddm_Db_JoinClause $join){
+			$join->on('b.config_id','=','a.config_id');
+			$join->where('b.path','=','web/base/web_url');
+		});
+		return $select->pluck('a.config_value','a.language_id');
 	}
 }
 

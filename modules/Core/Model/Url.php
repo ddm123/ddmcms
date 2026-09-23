@@ -127,11 +127,11 @@ class Core_Model_Url {
 		}
 		//如果斜杠超过5个以上则认为这并不是后台填写的url_key
 		if(isset($urlPaths[2]) && ($urlPaths = array_slice($urlPaths,1,-1,false)) && !isset($urlPaths[5])){
-			$where = Ddm_Db::getReadConn()->getSelect()->quoteInto(array(
-				'url_path'=>isset($urlPaths[1]) ? array('in'=>$urlPaths) : $urlPaths[0],
-				'language_id'=>intval($languageId===NULL ? Ddm::getLanguage()->language_id : $languageId)
-			));
-			return Ddm_Db::getReadConn()->fetchAll("SELECT * FROM ".$this->getMainTable()." WHERE $where",'url_path');
+			$builer = Ddm_Db::table($this->getMainTable(), true);
+			$builer->where('language_id','=',$languageId===NULL ? Ddm::getLanguage()->language_id : (int)$languageId);
+			isset($urlPaths[1]) ? $builer->whereIn('url_path',$urlPaths) : $builer->where('url_path','=',$urlPaths[0]);
+
+			return $builer->get(NULL,'url_path');
 		}
 		return array();
 	}

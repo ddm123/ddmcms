@@ -9,6 +9,7 @@
 
 class Cms_Block_Adminhtml_Widget_List extends Admin_Block_List_Abstract {
 	protected $_languageId = false;
+	/** @var Cms_Model_Widget */
 	protected $_widget = NULL;
 
 	/**
@@ -99,7 +100,8 @@ class Cms_Block_Adminhtml_Widget_List extends Admin_Block_List_Abstract {
 		if(strpos($fieldName,'.')){
 			parent::applyFilter($columnOption,$fieldName,$value);
 		}else{
-			$this->_widget->addAttributeToFilter($fieldName,$this->_grid->getCondition($columnOption,$value));
+			list($operator,$value) = $this->_grid->getCondition($columnOption,$value);
+			$this->_widget->addAttributeToFilter($fieldName,$value,$operator);
 		}
 		return $this;
 	}

@@ -158,14 +158,14 @@ class Core_Model_Helper {
 
 	/**
 	 * 获取一个实体的全部属性
-	 * @param array $entityType
+	 * @param string $entityType
 	 * @return array
 	 */
 	public function getEntityAttributes($entityType){
 		if(!isset($this->_entityAttributes[$entityType])){
 			$this->_entityAttributes[$entityType] = Ddm_Cache::load(self::ENTITY_ATTRIBUTE_CACHE_KEY.$entityType);
 			if($this->_entityAttributes[$entityType]===false){
-				$this->_entityAttributes[$entityType] = Ddm_Db::getReadConn()->getSelect()->from(Ddm_Db::getTable('attribute'))->where('entity_type',$entityType)->order('`position` ASC')->fetchAll('attribute_code');
+				$this->_entityAttributes[$entityType] = Ddm_Db::table('attribute')->where('entity_type','=',$entityType)->orderBy('position','ASC')->get(null,'attribute_code');
 				Ddm_Cache::save(self::ENTITY_ATTRIBUTE_CACHE_KEY.$entityType,$this->_entityAttributes[$entityType],array('attribute'),0);
 			}
 		}
@@ -174,7 +174,7 @@ class Core_Model_Helper {
 
 	/**
 	 * 删除一个实体属性的缓存
-	 * @param type $entityType
+	 * @param string|null $entityType
 	 * @return Core_Model_Helper
 	 */
 	public function removeAttributesCache($entityType = NULL){

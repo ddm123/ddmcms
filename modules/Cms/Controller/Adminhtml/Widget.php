@@ -58,9 +58,10 @@ class Cms_Controller_Adminhtml_Widget extends Admin_Controller_Abstract {
 		$result = array('error'=>0,'message'=>'');
 		if($identifier){
 			if(preg_match('/^[\w\-\.\/]+$/',$identifier)){
-				$expression = array('identifier'=>$identifier);
-				if($id)$expression['widget_id'] = array('<>'=>$id);
-				$exists = Ddm_Db::getReadConn()->count(Ddm_Db::getTable('widget'),$expression);
+				$builder = Ddm_Db::table('widget');
+				$builder->where('identifier','=',$identifier);
+				if($id)$builder->where('widget_id','!=',$id);
+				$exists = $builder->exists();
 				if($exists){
 					$result['error'] = 1;
 					$result['message'] = Ddm::getTranslate('cms')->translate('您填写的标识符已经存在');
@@ -98,7 +99,10 @@ class Cms_Controller_Adminhtml_Widget extends Admin_Controller_Abstract {
 					return;
 				}
 			}
-			$exists = Ddm_Db::getReadConn()->count($widget->getResource()->getMainTable(),array('identifier'=>$widgetData['identifier'],'widget_id'=>$widgetId ? array('<>'=>$widgetId) : array('>'=>0)));
+			$exists = Ddm_Db::table($widget->getResource()->getMainTable(), true)
+				->where('identifier','=',$widgetData['identifier'])
+				->where('widget_id', $widgetId ? '!=' : '>', $widgetId ? $widgetId : 0)
+				->exists();
 			if($exists){
 				$this->getNotice()->addError(Ddm::getTranslate('cms')->translate('您填写的标识符已经存在'));
 				Ddm_Request::redirect($widgetId ? Ddm::getLanguage()->getUrl('*/*/edit',array('id'=>$widgetId,'language'=>$languageId)) : Ddm::getLanguage()->getUrl('*/*/add'));

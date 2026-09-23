@@ -47,14 +47,15 @@ class News_Block_News_Hot extends Core_Block_Abstract {
 			$news->setLanguageId(Ddm::getLanguage()->language_id)
 				->addAttributeToSelect('title')
 				->addAttributeToSelect('url_key');
-			if($categoryToFilter)$news->getSelect()->where('main_table.category_id', $this->getCategoryId());
+			if($categoryToFilter)$news->getSelect()->where('main_table.category_id', '=', $this->getCategoryId());
 			$news->getSelect()
-				->order(array('main_table.views DESC','main_table.news_id DESC'))
-				->limit(0,$limit);
+				->orderBy('main_table.views','DESC')
+				->orderBy('main_table.news_id', 'DESC')
+				->limit($limit);
 
 			Ddm::dispatchEvent('get_news_hotlist_after',array('block'=>$this,'news'=>$news));
 
-			$this->_list = $news->getSelect()->fetchAll();
+			$this->_list = $news->getSelect()->get();
 		}
 		return $this->_list;
 	}

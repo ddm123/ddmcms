@@ -38,17 +38,24 @@ class News_Block_News_Detail extends Core_Block_Abstract {
 	 */
 	public function getPrveNext(){
 		if($this->_prvNext===NULL){
+			$newsId = (int)$this->getNews()->getId();
 			$news = new News_Model_News();
-			$select = $news->setLanguageId(Ddm::getLanguage()->language_id)
-				->addCategoryToSelect()
-				->addCategoryUrlToSelect()
-				->addAttributeToSelect('title')
-				->addAttributeToSelect('url_key')
-				->getSelect()->order("main_table.news_id DESC")->where("main_table.news_id",array('<'=>$this->getNews()->getId()))->limit(0,1);
-			$prvSql = $select->getSql();
-			$select->reset(Ddm_Db_Select::ORDER)->reset(Ddm_Db_Select::WHERE)
-				->order("main_table.news_id ASC")->where("main_table.news_id",array('>'=>$this->getNews()->getId()));
-			$this->_prvNext = Ddm_Db::getReadConn()->fetchAll("($prvSql) UNION ALL ($select)");
+			$news->setLanguageId(Ddm::getLanguage()->language_id);
+			$news->addCategoryToSelect();
+			$news->addCategoryUrlToSelect();
+			$news->addAttributeToSelect('title');
+			$news->addAttributeToSelect('url_key');
+
+			$prvSelect = clone $news->getSelect();
+			$prvSelect->orderBy("main_table.news_id", "DESC")->where("main_table.news_id",'<',$newsId)->limit(1);
+			$prvSqlParams = array();
+			$prvSql = $prvSelect->toSql($prvSqlParams);
+
+			$nextSelect = clone $news->getSelect();
+			$nextSelect->orderBy("main_table.news_id", "ASC")->where("main_table.news_id",'>',$newsId)->limit(1);
+			$nextParams = array();
+			$nextSql = $nextSelect->toSql($nextParams);
+			$this->_prvNext = Ddm_Db::getReadConn()->query("($prvSql) UNION ALL ($nextSql)", array_merge($prvSqlParams,$nextParams))->fetchAll(PDO::FETCH_ASSOC);
 		}
 		return $this->_prvNext;
 	}

@@ -9,6 +9,8 @@
 
 class Cms_Block_Adminhtml_Onepage_List extends Admin_Block_List_Abstract {
 	protected $_languageId = false;
+
+	/** @var Cms_Model_Onepage|null */
 	protected $_onepage = NULL;
 
 	/**
@@ -109,7 +111,8 @@ class Cms_Block_Adminhtml_Onepage_List extends Admin_Block_List_Abstract {
 		if(strpos($fieldName,'.')){
 			parent::applyFilter($columnOption,$fieldName,$value);
 		}else{
-			$this->_onepage->addAttributeToFilter($fieldName,$this->_grid->getCondition($columnOption,$value));
+			list($operator,$value) = $this->_grid->getCondition($columnOption,$value);
+			$this->_onepage->addAttributeToFilter($fieldName,$value,$operator);
 		}
 		return $this;
 	}

@@ -9,6 +9,8 @@
 
 class News_Block_Adminhtml_News_List extends Admin_Block_List_Abstract {
 	protected $_languageId = false;
+
+	/** @var News_Model_News|null */
 	protected $_news = NULL;
 
 	/**
@@ -22,17 +24,27 @@ class News_Block_Adminhtml_News_List extends Admin_Block_List_Abstract {
 		$this->_grid->primaryKey = 'news_id';
 		$this->_grid->saveFieldValueUrl = Ddm::getUrl('*/*/save-field-value');
 
+		$languageId = $this->getLanguageId();
 		$this->_news = new News_Model_News();
-		$this->_news->setLanguageId($this->getLanguageId())
+		$this->_news->setLanguageId($languageId)
 			->addAttributeToSelect('title')
 			->addAttributeToSelect('author');
 
 		if($categoryAttribute = Ddm::getHelper('core')->getEntityAttribute('news_category','name')){
-			$this->_news->getSelect()
-				->leftJoin(array('category'=>$categoryAttribute->getTable()),"`category`.entity_id=main_table.category_id AND `category`.attribute_id='".$categoryAttribute->getId()."' AND `category`.language_id='0'",$this->getLanguageId() ? NULL : array('category_name'=>new Ddm_Db_Expression('IFNULL(`category`.`value`,\'-\')')));
-			if($this->getLanguageId()){
-				$this->_news->getSelect()
-					->leftJoin(array('category2'=>$categoryAttribute->getTable()),"`category2`.entity_id=main_table.category_id AND `category2`.attribute_id='".$categoryAttribute->getId()."' AND `category2`.language_id='".$this->getLanguageId()."'",array('category_name'=>new Ddm_Db_Expression("IF(main_table.category_id='0','-',IFNULL(category2.`value`,`category`.`value`))")));
+			$this->_news->getSelect()->leftJoin(array('category'=>$categoryAttribute->getTable(),true),function(Ddm_Db_JoinClause $join) use($categoryAttribute){
+				$join->on('category.entity_id','=','main_table.category_id');
+				$join->where('category.attribute_id','=',$categoryAttribute->getId());
+				$join->where('category.language_id','=',0);
+			});
+			if($languageId){
+				$this->_news->getSelect()->leftJoin(array('category2'=>$categoryAttribute->getTable(),true),function(Ddm_Db_JoinClause $join) use($categoryAttribute,$languageId){
+					$join->on('category2.entity_id','=','main_table.category_id');
+					$join->where('category2.attribute_id','=',$categoryAttribute->getId());
+					$join->where('category2.language_id','=',$languageId);
+				})
+				->addSelect(array('category_name'=>new Ddm_Db_Expression("IF(main_table.category_id='0','-',IFNULL(category2.value, category.value))")));
+			}else{
+				$this->_news->getSelect()->addSelect(array('category_name'=>new Ddm_Db_Expression('IFNULL(category.value,\'-\')')));
 			}
 		}
 		$this->_grid->setSelect($this->_news->getSelect())
@@ -65,7 +77,7 @@ class News_Block_Adminhtml_News_List extends Admin_Block_List_Abstract {
 	}
 
 	/**
-	 * @return News_Block_Adminhtml_Onepage_List
+	 * @return News_Block_Adminhtml_News_List
 	 */
 	protected function _prepareColumns(){
 		$this->getGrid()
@@ -160,8 +172,10 @@ class News_Block_Adminhtml_News_List extends Admin_Block_List_Abstract {
 				parent::applyFilter($columnOption,$this->getLanguageId()
 					? new Ddm_Db_Expression("IF(main_table.category_id='0','-',IFNULL(category2.`value`,`category`.`value`))")
 					: new Ddm_Db_Expression('IFNULL(`category`.`value`,\'-\')'),$value);
-			else
-				$this->_news->addAttributeToFilter($fieldName,$this->_grid->getCondition($columnOption,$value));
+			else{
+				list($operator,$value) = $this->_grid->getCondition($columnOption,$value);
+				$this->_news->addAttributeToFilter($fieldName,$value,$operator);
+			}
 		}
 		return $this;
 	}

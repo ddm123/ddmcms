@@ -106,11 +106,13 @@ abstract class Core_Block_Frontend_List_Abstract extends Core_Block_Abstract {
 				$this->_beforeGetList();
 
 				$vars = $this->getPageLinkBlock()->parseVars($this->getPageSize(),$this->getCount());
+				$orderBy = $this->getOrderBy();
 				$this->_startRowNumber = $vars[0] + 1;
-				$this->_list = $this->getModelObject()
-					->setLimit($this->getPageSize(),$vars[0])
-					->getSelect()->order($this->getOrderBy())
-					->fetchAll();
+				$builder = $this->getModelObject()->setLimit($this->getPageSize(),$vars[0])->getSelect();
+				if($orderBy && preg_match('/^(.+?)(?:\s+(asc|desc))?$/i',$orderBy,$matches)){
+					$builder->orderBy($matches[1], isset($matches[2]) ? $matches[2] : 'asc');
+				}
+				$this->_list = $builder->get();
 
 				$this->_afterGetList();
 				$this->addBlock($this->getPageLinkBlock(),'page');

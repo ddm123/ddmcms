@@ -28,18 +28,25 @@ class Core_Model_Resource_Attribute extends Core_Model_Resource_Abstract {
 	 * @return Core_Model_Resource_Attribute
 	 */
 	public function addOrder($o = NULL){
-		if($o===NULL)$o = 'main_table.`position` ASC';
-		$this->getSelect()->order($o);
+		if($o===NULL){
+			$this->getSelect()->orderBy('main_table.position','ASC');
+		}else if(preg_match('/^(.+?)(?:\s+(asc|desc))?$/i',$o,$matches)){
+			$this->getSelect()->orderBy($matches[1], isset($matches[2]) ? $matches[2] : 'asc');
+		}
 		return $this;
 	}
 
 	/**
-	 * @return array
+	 * @return array<int, Core_Model_Attribute>
 	 */
 	public function getAttributes(){
 		if($this->_attributes===NULL){
 			$this->_attributes = array();
-			foreach($this->getSelect()->fetchAll($this->getPrimarykey()) as $attributeId=>$_attribute){
+			$select = Ddm_Db::table(array('main_table'=>$this->getMainTableName()));
+			$select->select(array('main_table.*'));
+			$primarykey = $this->getPrimarykey();
+			foreach($this->getSelect()->get() as $_attribute){
+				$attributeId = $_attribute[$primarykey];
 				$this->_attributes[$attributeId] = new Core_Model_Attribute();
 				$this->_attributes[$attributeId]->addData($_attribute);
 				$this->_attributes[$attributeId]->setOrigData($_attribute,NULL,true);
