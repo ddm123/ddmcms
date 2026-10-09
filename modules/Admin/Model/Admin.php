@@ -308,15 +308,15 @@ class Admin_Model_Admin extends Core_Model_Abstract {
 
 	protected function _afterSave(){
 		if($this->issetData('groups_position')){
-			Ddm_Db::getWriteConn()->delete(Ddm_Db::getTable('admin_group_user'),array('admin_id'=>$this->getId()));
+			Ddm_Db::table('admin_group_user')->where('admin_id','=',$this->getId())->delete();
 		}
 		if($this->groups_position){
 			foreach($this->groups_position as $groupId=>$position){
-				Ddm_Db::getWriteConn()->save(Ddm_Db::getTable('admin_group_user'),array(
+				Ddm_Db::getWriteConn()->insert(Ddm_Db::getTable('admin_group_user'),array(
 					'group_id'=>$groupId,
 					'admin_id'=>$this->getId(),
 					'position'=>$position
-				), Ddm_Db_Interface::SAVE_INSERT);
+				), false, array('position'=>$position));
 			}
 		}
 
@@ -324,7 +324,7 @@ class Admin_Model_Admin extends Core_Model_Abstract {
 	}
 
 	protected function _afterDelete(){
-		Ddm_Db::getWriteConn()->delete(Ddm_Db::getTable('admin_group_user'),array('admin_id'=>$this->getId()));
+		Ddm_Db::table('admin_group_user')->where('admin_id','=',$this->getId())->delete();
 
 		return parent::_afterDelete();
 	}

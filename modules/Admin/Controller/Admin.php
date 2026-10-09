@@ -118,7 +118,7 @@ class Admin_Controller_Admin extends Admin_Controller_Abstract {
 				Ddm_Db::beginTransaction();
 				try{
 					$value = (int)Ddm_Request::get('value');
-					Ddm_Db::getWriteConn()->save(Ddm_Db::getTable('admin_user'),array('is_active'=>$value),Ddm_Db_Interface::SAVE_UPDATE,array('admin_id'=>$ids));
+					Ddm_Db::table('admin_user')->where('admin_id',$ids)->update(array('is_active'=>$value));
 					$this->getNotice()->addSuccess(Ddm::getTranslate('admin')->___('%s已保存成功',Ddm::getTranslate('admin')->translate('管理员')));
 					Ddm_Db::commit();
 				}catch(Exception $ex){

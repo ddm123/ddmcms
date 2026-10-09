@@ -158,13 +158,13 @@ class Config_Model_Resource_Config extends Core_Model_Resource_Abstract {
 		if(($id = (int)$object->getId()) && is_array($values = $object->getData('values'))){
 			foreach($values as $languageId=>$value){
 				if($value===false){
-					Ddm_Db::getWriteConn()->delete(Ddm_Db::getTable('config_value'),array('config_id'=>$id,'language_id'=>$languageId));
+					Ddm_Db::table('config_value')->where('config_id','=',$id)->where('language_id','=',$languageId)->delete();
 				}else{
-					Ddm_Db::getWriteConn()->save(Ddm_Db::getTable('config_value'),array(
+					Ddm_Db::getWriteConn()->insert(Ddm_Db::getTable('config_value'),array(
 						'config_id'=>$id,
 						'language_id'=>$languageId,
 						'config_value'=>$value
-					),Ddm_Db_Interface::SAVE_DUPLICATE,array('config_value'=>$value));
+					),false,array('config_value'=>$value));
 				}
 			}
 		}
@@ -172,7 +172,7 @@ class Config_Model_Resource_Config extends Core_Model_Resource_Abstract {
 	}
 
 	protected function _afterDelete(Core_Model_Abstract $object){
-		Ddm_Db::getWriteConn()->delete(Ddm_Db::getTable('config_value'),array('config_id'=>(int)$object->getId()));
+		Ddm_Db::table('config_value')->where('config_id','=',(int)$object->getId())->delete();
 		return $this;
 	}
 }

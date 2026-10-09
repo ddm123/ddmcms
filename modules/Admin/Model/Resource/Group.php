@@ -78,30 +78,32 @@ class Admin_Model_Resource_Group extends Core_Model_Resource_Abstract {
 	public function saveResources(Admin_Model_Group $object,$resources){
 		if($groupId = $object->getId()){
 			if($resources=='all'){
-				Ddm_Db::getWriteConn()->delete(Ddm_Db::getTable('admin_allow_value'),array('group_id'=>$groupId));
-				Ddm_Db::getWriteConn()->delete(Ddm_Db::getTable('admin_allow'),array('group_id'=>$groupId,'path'=>array('<>'=>'all')));
-				Ddm_Db::getWriteConn()->save(Ddm_Db::getTable('admin_allow'),array('group_id'=>$groupId,'path'=>'all'),Ddm_Db_Interface::SAVE_DUPLICATE,array('path'=>'all'));
+				Ddm_Db::table('admin_allow_value')->where('group_id','=',$groupId)->delete();
+				Ddm_Db::table('admin_allow')->where('group_id','=',$groupId)->where('path','!=','all')->delete();
+				Ddm_Db::getWriteConn()->insert(Ddm_Db::getTable('admin_allow'),array('group_id'=>$groupId,'path'=>'all'),false,array('path'=>'all'));
 			}else if(is_array($resources)){
-				Ddm_Db::getWriteConn()->delete(Ddm_Db::getTable('admin_allow'),array('group_id'=>$groupId,'path'=>'all'));
+				Ddm_Db::table('admin_allow')->where('group_id','=',$groupId)->where('path','=','all')->delete();
 				foreach($resources as $path=>$allowValue){
 					if(is_array($allowValue) && preg_match('/^\w[\w\/]*\w$/',$path)){
-						$allowId = Ddm_Db::getWriteConn()->fetchOne("SELECT allow_id FROM ".Ddm_Db::getTable('admin_allow')." WHERE group_id='$groupId' AND `path`='$path'",true);
+						$allowId = Ddm_Db::table('admin_allow')->where('group_id','=',$groupId)->where('path','=',$path)->value('allow_id');
 						if(!$allowId){
-							Ddm_Db::getWriteConn()->save(Ddm_Db::getTable('admin_allow'),array('group_id'=>$groupId,'path'=>strtolower($path)));
-							$allowId = Ddm_Db::lastInsertId();
+							$allowId = Ddm_Db::table('admin_allow')->insertGetId(array('group_id'=>$groupId,'path'=>strtolower($path)));
+							if(!$allowId){
+								throw new Exception(Ddm::getTranslate('admin')->translate('保存权限失败，获取不到权限ID'));
+							}
 						}
 						foreach($allowValue as $allowType=>$value){
 							if(preg_match('/^\w+$/',$allowType)){
 								if($value===''){
-									Ddm_Db::getWriteConn()->delete(Ddm_Db::getTable('admin_allow_value'),array('allow_id'=>$allowId,'allow_type'=>$allowType));
+									Ddm_Db::table('admin_allow_value')->where('allow_id','=',$allowId)->where('allow_type','=',$allowType)->delete();
 								}else{
 									$value = (int)$value ? 1 : 0;
-									Ddm_Db::getWriteConn()->save(Ddm_Db::getTable('admin_allow_value'),array(
+									Ddm_Db::getWriteConn()->insert(Ddm_Db::getTable('admin_allow_value'),array(
 										'allow_id'=>$allowId,
 										'group_id'=>$groupId,
 										'allow_type'=>$allowType,
 										'allow_value'=>$value
-									),Ddm_Db_Interface::SAVE_DUPLICATE,array('allow_value'=>$value));
+									),false,array('allow_value'=>$value));
 								}
 							}
 						}

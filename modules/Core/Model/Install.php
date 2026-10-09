@@ -37,7 +37,7 @@ class Core_Model_Install {
 		if($this->_modulesVersion===NULL){
 			$this->_modulesVersion = Ddm_Cache::load(self::MODULES_CACHE_KEY);
 			if($this->_modulesVersion===false){
-				$this->_modulesVersion = $this->getConnection()->fetchPairs("SELECT `module`,`version` FROM ".Ddm_Db::getTable('modules'));
+				$this->_modulesVersion = Ddm_Db::table('modules')->pluck('version', 'module');
 				Ddm_Cache::save(self::MODULES_CACHE_KEY,$this->_modulesVersion,array('module'),0);
 			}
 		}

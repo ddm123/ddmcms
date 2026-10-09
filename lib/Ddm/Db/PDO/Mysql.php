@@ -101,13 +101,18 @@ class Ddm_Db_PDO_Mysql implements Ddm_Db_Interface
      * 新增一条记录
      * @param string $table
      * @param array $row
-     * @param bool $useIgnore
+     * @param bool|array $useIgnore
      * @param array $OnDuplicateFields 如果出现重复则更新这些字段值
      * @return int
      */
     public function insert($table, array $row, $useIgnore = false, array $OnDuplicateFields = array())
     {
         if (!$row) return 0;
+
+        if (is_array($useIgnore) && !$OnDuplicateFields) {
+            $OnDuplicateFields = $useIgnore;
+            $useIgnore = false;
+        }
 
         $fields = array_keys($row);
         $fieldsCount = count($fields);
@@ -172,13 +177,13 @@ class Ddm_Db_PDO_Mysql implements Ddm_Db_Interface
     {
         if (!$rows) return 0;
 
+        if (!isset($rows[0]) || !is_array($rows[0])) {
+            return $this->insert($table, $rows, $useIgnore, $OnDuplicateFields);
+        }
+
         if (is_array($useIgnore) && !$OnDuplicateFields) {
             $OnDuplicateFields = $useIgnore;
             $useIgnore = false;
-        }
-
-        if (!isset($rows[0]) || !is_array($rows[0])) {
-            return $this->insert($table, $rows, $useIgnore, $OnDuplicateFields);
         }
 
         $fields = array_keys($rows[0]);

@@ -25,7 +25,7 @@ class Cms_Model_Observer {
 	public function deleteConfigFromLanguage($params){
 		if($languageId = (int)$params['object']->getId()){
 			foreach($this->_getCmsDataValueTables() as $table){
-				Ddm_Db::getWriteConn()->delete($table,array('language_id'=>$languageId));
+				Ddm_Db::table($table,true)->where('language_id','=',$languageId)->delete();
 			}
 		}
 		return $this;
@@ -38,7 +38,7 @@ class Cms_Model_Observer {
 	public function deleteConfigFromAttribute($params){
 		if($attributeId = (int)$params['object']->getId()){
 			foreach($this->_getCmsDataValueTables() as $table){
-				Ddm_Db::getWriteConn()->delete($table,array('attribute_id'=>$attributeId));
+				Ddm_Db::table($table,true)->where('attribute_id','=',$attributeId)->delete();
 			}
 		}
 		return $this;

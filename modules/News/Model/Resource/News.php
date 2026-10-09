@@ -28,7 +28,7 @@ class News_Model_Resource_News extends Core_Model_Resource_Entity {
 				$newsId = (int)$newsId;
 			}
 
-			Ddm_Db::getWriteConn()->save(Ddm_Db::getTable('news'),array('category_id'=>$categoryId),Ddm_Db_Interface::SAVE_UPDATE,array('news_id'=>$newsId));
+			Ddm_Db::table('news')->where('news_id','=',$newsId)->update(array('category_id'=>$categoryId));
 		}
 		return $this;
 	}
@@ -41,7 +41,7 @@ class News_Model_Resource_News extends Core_Model_Resource_Entity {
 	 */
 	public function addView($newsId,$i = 1){
 		if(($i = (int)$i) && ($newsId = (int)$newsId)){
-			Ddm_Db::getWriteConn()->query("UPDATE ".Ddm_Db::getTable('news')." SET `views`=`views`+$i WHERE news_id='$newsId'");
+			Ddm_Db::table('news')->where('news_id','=',$newsId)->increment('views',$i);
 		}
 		return $this;
 	}

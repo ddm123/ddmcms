@@ -191,7 +191,7 @@ abstract class Core_Model_Urlindex_Abstract {
 				}
 			}
 			if($data){
-				Ddm_Db::getWriteConn()->insertMultiple(Core_Model_Url::singleton()->getMainTable(),$data,array('module','controller','action','params'));
+				Ddm_Db::getWriteConn()->insertMultiple(Core_Model_Url::singleton()->getMainTable(),$data,false,array('module','controller','action','params'));
 			}
 		}
 
@@ -213,11 +213,12 @@ abstract class Core_Model_Urlindex_Abstract {
 
 		$cacheKey = 'remove_not_exist_url_'.$this->getUrlKeyAttribute()->getId();
 		if(!$checkCache || Ddm_Cache::load($cacheKey)==false){
-			Ddm_Db::getWriteConn()->delete(Ddm_Db::getTable('url_index'),array(
-				'module'=>(string)$this->getModule(),
-				'controller'=>(string)$this->getController(),
-				'action'=>(string)$this->getAction()
-			));
+			Ddm_Db::table('url_index')
+				->where('module', '=', (string)$this->getModule())
+				->where('controller', '=', (string)$this->getController())
+				->where('action', '=', (string)$this->getAction())
+				->delete();
+
 			Ddm_Cache::save($cacheKey,'1',array(),86400);
 		}
 		return $this;

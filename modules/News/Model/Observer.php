@@ -20,7 +20,7 @@ class News_Model_Observer {
     }
 
 	/**
-	 * @param type $params
+	 * @param array $params
 	 * @return News_Model_Observer
 	 */
 	public function addCacheItem($params){
@@ -39,7 +39,7 @@ class News_Model_Observer {
 	public function deleteValueFromLanguage($params){
 		if($languageId = (int)$params['object']->getId()){
 			foreach($this->_getNewsDataValueTables() as $table){
-				Ddm_Db::getWriteConn()->delete($table,array('language_id'=>$languageId));
+				Ddm_Db::table($table,true)->where('language_id','=',$languageId)->delete();
 			}
 		}
 		return $this;
@@ -52,7 +52,7 @@ class News_Model_Observer {
 	public function deleteValuegFromAttribute($params){
 		if($attributeId = (int)$params['object']->getId()){
 			foreach($this->_getNewsDataValueTables() as $table){
-				Ddm_Db::getWriteConn()->delete($table,array('attribute_id'=>$attributeId));
+				Ddm_Db::table($table,true)->where('attribute_id','=',$attributeId)->delete();
 			}
 		}
 		return $this;

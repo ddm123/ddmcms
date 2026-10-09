@@ -82,8 +82,9 @@ class Admin_Model_Group extends Core_Model_Abstract {
 	}
 
 	protected function _afterDelete() {
-		Ddm_Db::getWriteConn()->delete(Ddm_Db::getTable('admin_allow'),array('group_id'=>$this->getId()));
-		Ddm_Db::getWriteConn()->delete(Ddm_Db::getTable('admin_allow_value'),array('group_id'=>$this->getId()));
+		Ddm_Db::table('admin_allow')->where('group_id','=',$this->getId())->delete();
+		Ddm_Db::table('admin_allow_value')->where('group_id','=',$this->getId())->delete();
+
 		return parent::_afterDelete();
 	}
 }

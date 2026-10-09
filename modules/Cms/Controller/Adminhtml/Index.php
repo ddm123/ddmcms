@@ -104,9 +104,17 @@ class Cms_Controller_Adminhtml_Index extends Admin_Controller_Abstract {
 					$isEnabledAttribute = Ddm::getHelper('core')->getEntityAttribute('onepage','is_enabled');
 					if($isEnabledAttribute){
 						if($this->_getLanguageId()){
-							Ddm_Db::getWriteConn()->save($isEnabledAttribute->getTable(),array('value'=>$value,'is_use_default'=>0),Ddm_Db_Interface::SAVE_UPDATE,array('entity_id'=>$ids,'attribute_id'=>$isEnabledAttribute->getId(),'language_id'=>$this->_getLanguageId()));
+							Ddm_Db::table($isEnabledAttribute->getTable(),true)
+								->where('entity_id',$ids)
+								->where('attribute_id','=',$isEnabledAttribute->getId())
+								->where('language_id','=',$this->_getLanguageId())
+								->update(array('value'=>$value,'is_use_default'=>0));
 						}else{
-							Ddm_Db::getWriteConn()->save($isEnabledAttribute->getTable(),array('value'=>$value),Ddm_Db_Interface::SAVE_UPDATE,array('entity_id'=>$ids,'attribute_id'=>$isEnabledAttribute->getId(),0=>new Ddm_Db_Expression("(language_id='0' OR is_use_default='1')")));
+							Ddm_Db::table($isEnabledAttribute->getTable(),true)
+								->where('entity_id',$ids)
+								->where('attribute_id','=',$isEnabledAttribute->getId())
+								->where(function(Ddm_Db_Builder $builder){ $builder->where('language_id','=',0)->orWhere('is_use_default','=',1); })
+								->update(array('value'=>$value));
 						}
 						foreach($ids as $_id)Ddm::getHelper('Cms')->removeOnepageCache($_id);//刷新缓存
 						$this->getNotice()->addSuccess(Ddm::getTranslate('admin')->___('%s已保存成功',Ddm::getTranslate('cms')->translate('单页面')));

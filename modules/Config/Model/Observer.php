@@ -14,7 +14,7 @@ class Config_Model_Observer {
 	 */
 	public function deleteConfigFromLanguage($params){
 		if($languageId = (int)$params['object']->getId()){
-			Ddm_Db::getWriteConn()->delete(Ddm_Db::getTable('config_value'),array('language_id'=>$languageId));
+			Ddm_Db::table('config_value')->where('language_id','=',$languageId)->delete();
 		}
 		return $this;
 	}

@@ -70,7 +70,7 @@ class Core_Model_Url {
 				);
 			}
 			if($data)
-				Ddm_Db::getWriteConn()->insertMultiple($this->getMainTable(),$data,array('module','controller','action','params'));
+				Ddm_Db::getWriteConn()->insertMultiple($this->getMainTable(),$data,false,array('module','controller','action','params'));
 		}
 		return $this;
 	}
@@ -87,14 +87,14 @@ class Core_Model_Url {
 	public function saveUrlIndex($urlKey,$languageId,$module,$controller = '',$action = '',array $params = NULL){
 		if($urlKey && $module){
 			if($params!==NULL)$params = is_array($params) ? serialize($params) : NULL;
-			Ddm_Db::getWriteConn()->save($this->getMainTable(),array(
+			Ddm_Db::getWriteConn()->insert($this->getMainTable(),array(
 				'url_path'=>"$module/$urlKey",
 				'language_id'=>(int)$languageId,
 				'module'=>(string)$module,
 				'controller'=>(string)$controller,
 				'action'=>(string)$action,
 				'params'=>(string)$params
-			),Ddm_Db_Interface::SAVE_DUPLICATE,array(
+			),false,array(
 				'module'=>(string)$module,
 				'controller'=>(string)$controller,
 				'action'=>(string)$action,
@@ -142,10 +142,11 @@ class Core_Model_Url {
 	 * @return Core_Model_Url
 	 */
 	public function removeFromUrlPath($urlPath,$languageId = true){
-		$where = array('url_path'=>$urlPath);
+		$builder = Ddm_Db::table($this->getMainTable(), true);
+		$builder->where('url_path','=',$urlPath);
 		if($languageId===NULL)$languageId = Ddm::getLanguage()->language_id;
-		if($languageId!==true)$where['language_id'] = $languageId;
-		Ddm_Db::getWriteConn()->delete($this->getMainTable(),$where);
+		if($languageId!==true)$builder->where('language_id','=',$languageId);
+		$builder->delete();
 		return $this;
 	}
 
@@ -165,7 +166,7 @@ class Core_Model_Url {
 	 */
 	public function deleteFromLanguage($params){
 		if($languageId = (int)$params['object']->getId()){
-			Ddm_Db::getWriteConn()->delete($this->getMainTable(),array('language_id'=>$languageId));
+			Ddm_Db::table($this->getMainTable(), true)->where('language_id','=',$languageId)->delete();
 		}
 		return $this;
 	}
@@ -175,6 +176,7 @@ class Core_Model_Url {
 	 * @return Core_Model_Url
 	 */
 	public function matchesUrl($params){
+		$urlPaths = array();
 		if(($urlPath = $params['controller']->getSelfPath()) && ($data = $this->loadFromUrlPath($urlPath,NULL,$urlPaths))){
 			for($i = count($urlPaths);$i--;){
 				if(isset($data[$urlPaths[$i]])){

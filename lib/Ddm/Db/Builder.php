@@ -477,13 +477,13 @@ class Ddm_Db_Builder {
 	/**
 	 * 字段自增
 	 * @param string $column
-	 * @param int $amount
+	 * @param int|float $amount
 	 * @param array $extra
 	 * @return int
 	 */
 	public function increment($column,$amount = 1,array $extra = array()){
 		$amount = (float)$amount;
-		$extra[$column] = new Ddm_Db_Expression($this->wrap($column).' + '.($amount<0 ? '('.$amount.')' : $amount));
+		$extra[$column] = new Ddm_Db_Expression($this->wrap($column).($amount<0 ? $amount : '+'.$amount));
 		return $this->update($extra);
 	}
 

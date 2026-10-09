@@ -75,12 +75,7 @@ class News_Model_Resource_Category extends Core_Model_Resource_Entity {
 
 	protected function _afterDelete(Core_Model_Abstract $object){
 		if($object->getId()){
-			Ddm_Db::getWriteConn()->save(
-				Ddm_Db::getTable('news'),
-				array('category_id'=>0),
-				Ddm_Db_Interface::SAVE_UPDATE,
-				array('category_id'=>$object->getId())
-			);
+			Ddm_Db::table('news')->where('category_id', '=', $object->getId())->update(array('category_id'=>0));
 		}
 		return parent::_afterDelete($object);
 	}

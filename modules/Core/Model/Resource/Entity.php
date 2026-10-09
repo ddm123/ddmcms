@@ -37,7 +37,7 @@ abstract class Core_Model_Resource_Entity extends Core_Model_Resource_Abstract {
 	protected function _afterDelete(Core_Model_Abstract $object) {
 		if($id = (int)$object->getId()){
 			foreach($this->getAttributeTables($object) as $table){
-				Ddm_Db::getWriteConn()->delete($table,array('entity_id'=>$id));
+				Ddm_Db::table($table,true)->where('entity_id','=',$id)->delete();
 			}
 		}
 		return parent::_afterDelete($object);
@@ -80,30 +80,30 @@ abstract class Core_Model_Resource_Entity extends Core_Model_Resource_Abstract {
 		if($languageId){
 			if($model->$attributeCode===false || $model->$attributeCode===NULL){
 				if(!$attribute->is_global){
-					Ddm_Db::getWriteConn()->query("DELETE FROM `$table` WHERE `entity_id`='$entityId' AND `attribute_id`='".$attributeId."' AND `language_id`='$languageId'");
+					Ddm_Db::table($table,true)->where('entity_id','=',$entityId)->where('attribute_id','=',$attributeId)->where('language_id','=',$languageId)->delete();
 				}else if($model->$attributeCode===NULL){
-					Ddm_Db::getWriteConn()->save($table,array(
+					Ddm_Db::getWriteConn()->insert($table,array(
 						'entity_id'=>$entityId,
 						'attribute_id'=>$attributeId,
 						'language_id'=>0,
 						'value'=>NULL
-					),Ddm_Db_Interface::SAVE_DUPLICATE,array('value'=>NULL));
+					),false,array('value'=>NULL));
 				}
 			}else{
-				Ddm_Db::getWriteConn()->save($table,array(
+				Ddm_Db::getWriteConn()->insert($table,array(
 					'entity_id'=>$entityId,
 					'attribute_id'=>$attributeId,
 					'language_id'=>$attribute->is_global ? 0 : $languageId,
 					'value'=>$attribute->setValue($model->$attributeCode)
-				),Ddm_Db_Interface::SAVE_DUPLICATE,array('value'=>$attribute->setValue($model->$attributeCode)));
+				),false,array('value'=>$attribute->setValue($model->$attributeCode)));
 			}
 		}else{
-			Ddm_Db::getWriteConn()->save($table,array(
+			Ddm_Db::getWriteConn()->insert($table,array(
 				'entity_id'=>$entityId,
 				'attribute_id'=>$attributeId,
 				'language_id'=>0,
 				'value'=>$attribute->setValue($model->$attributeCode)
-			),Ddm_Db_Interface::SAVE_DUPLICATE,array('value'=>$attribute->setValue($model->$attributeCode)));
+			),false,array('value'=>$attribute->setValue($model->$attributeCode)));
 		}
 		return $this;
 	}
