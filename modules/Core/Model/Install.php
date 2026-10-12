@@ -78,7 +78,7 @@ class Core_Model_Install {
 			if($a->attribute_id && $a->backend_type!='static')
 				$tables[$a->getTable()] = $a->getTable();
 		}
-		$tables and $this->_createAttributeValueTable($tables);
+		$tables and $this->_createAttributeValueTables($tables);
 		return $this;
 	}
 
@@ -89,8 +89,8 @@ class Core_Model_Install {
 	 * @return Config_Model_Config
 	 */
 	public function addConfig($path,$value,$languageId = 0){
-		return $this->getModel('config','config')
-			->loadFromPath($path)
+		$config = $this->getModel('config','config');/** @var Config_Model_Config $config */
+		return $config->loadFromPath($path)
 			->addData(array('path'=>$path,'values'=>is_array($value) ? $value : array((int)$languageId=>$value)))
 			->save();
 	}
@@ -115,11 +115,11 @@ class Core_Model_Install {
 					$this->_installModule($modulesVersion,$moduleName,$config);
 				}
 				if($isActive || isset($modulesVersion[$moduleName])){
-					$this->getConnection()->save(Ddm_Db::getTable('modules'),array(
+					$this->getConnection()->insert(Ddm_Db::getTable('modules'),array(
 						'module'=>$moduleName,
 						'version'=>$isActive ? $config['version'] : $modulesVersion[$moduleName],
 						'is_active'=>empty($config['active']) ? 0 : 1
-					),Ddm_Db_Interface::SAVE_DUPLICATE,array('version','is_active'));
+					),false,array('version','is_active'));
 				}
 			}
 		}
@@ -164,12 +164,10 @@ class Core_Model_Install {
 	 * @param array|string $table
 	 * @return Core_Model_Install
 	 */
-	protected function _createAttributeValueTable($table){
+	protected function _createAttributeValueTables($table){
 		foreach((array)$table as $tableName){
 			$type = explode('_',$tableName);
-			if($sql = $this->_getCreateAttributeValueTableSql($tableName,end($type))){
-				$this->executeSql($sql);
-			}
+			$this->_createAttributeValueTable($tableName,end($type));
 		}
 		return $this;
 	}
@@ -177,22 +175,31 @@ class Core_Model_Install {
 	/**
 	 * @param string $tableName
 	 * @param string $type
-	 * @return string
+	 * @return bool
 	 */
-	protected function _getCreateAttributeValueTableSql($tableName,$type){
-		$valueTypes = array('int'=>'int(10)','varchar'=>'varchar(255)','text'=>'text');
-		$sql = '';
-		if(isset($valueTypes[$type])){
-			$sql .= "CREATE TABLE IF NOT EXISTS `$tableName` (\n";
-			$sql .= "`entity_id` int(10) unsigned NOT NULL default '0',\n";
-			$sql .= "`attribute_id` int(4) unsigned NOT NULL default '0',\n";
-			$sql .= "`language_id` int(4) unsigned NOT NULL default '0',\n";
-			$sql .= "`value` ".$valueTypes[$type]." NULL default NULL,\n";
-			$sql .= "UNIQUE KEY `entity_id_attribute_id_language_id` (`entity_id`,attribute_id,`language_id`),\n";
-			$sql .= "KEY `entity_id` (`entity_id`)\n";
-			$sql .= ") ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci";
+	protected function _createAttributeValueTable($tableName,$type){
+		if($type==='int'){
+			$valueColumn = function($table){ $table->integer('value')->unsigned()->nullable(true); };
+		}else if($type==='varchar'){
+			$valueColumn = function($table){ $table->string('value')->nullable(true); };
+		}else if($type==='text'){
+			$valueColumn = function($table){ $table->text('value')->nullable(true); };
+		}else{
+			return false;
 		}
-		return $sql;
+
+		$tablePrefix = Ddm_Db::getTable('');
+		if($tablePrefix)$tableName = substr($tableName, strlen($tablePrefix));
+		Ddm_Db::schema()->createIfNotExists($tableName, function ($table) use($tableName, $valueColumn) {
+			$table->integer('entity_id')->unsigned()->nullable(false)->default(0);
+			$table->integer('attribute_id')->unsigned()->nullable(false)->default(0);
+			$table->integer('language_id')->unsigned()->nullable(false)->default(0);
+			$valueColumn($table);
+			$table->primary(array('entity_id','attribute_id','language_id'));
+			$table->index(array('attribute_id'),$tableName.'_attribute_id');
+			$table->engine('InnoDB');
+		});
+		return true;
 	}
 
 	/**
@@ -227,6 +234,6 @@ class Core_Model_Install {
 	private function _sortFilesCallback($a,$b){
 		preg_match('/sql\/(?:install|upgrade)-(.+?)\.php$/',$a,$v1);
 		preg_match('/sql\/(?:install|upgrade)-(.+?)\.php$/',$b,$v2);
-		return $v1 && $v2 ? version_compare($v1,$v2) : 0;
+		return $v1 && $v2 ? version_compare($v1[1],$v2[1]) : 0;
 	}
 }

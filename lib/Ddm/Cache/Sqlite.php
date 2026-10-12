@@ -10,13 +10,18 @@
 class Ddm_Cache_Sqlite implements Ddm_Cache_Interface {
 	protected $_options = array('db_file'=>'data/cache/data-cache/cache.sq3','dir_mode'=>0755);
 
+	/** @var PDO */
 	private $_SQLite = NULL;
+
 	private $_beginTransaction = false;
+	private $_statements = array();
 
 	public function __construct(array $options){
 		$this->_options = array_merge($this->_options, $options);
 		$path = dirname(SITE_ROOT.'/'.$this->_options['db_file']);
-		is_dir($path) or mkdir($path,$this->_options['dir_mode'],true);
+		if(!is_dir($path) && !@mkdir($path,$this->_options['dir_mode'],true) && !is_dir($path)){
+			throw new Exception('Unable to create cache directory: '.$path);
+		}
 		$this->getConnection();
 	}
 
@@ -25,13 +30,32 @@ class Ddm_Cache_Sqlite implements Ddm_Cache_Interface {
 	}
 
 	/**
+	 * 返回绝对路径
+	 * @return string
+	 */
+	public function getCacheDir(){
+		return SITE_ROOT.DIRECTORY_SEPARATOR.$this->_options['db_file'];
+	}
+
+	/**
 	 * @return PDO
 	 */
 	public function getConnection(){
 		if($this->_SQLite===NULL){
-			$isExistsDb = is_file(SITE_ROOT.'/'.$this->_options['db_file']);
 			$this->_SQLite = new PDO('sqlite:'.SITE_ROOT.'/'.$this->_options['db_file']);
-			$isExistsDb or $this->_buildStructure($this->_SQLite);
+			$this->_SQLite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+			$this->_buildStructure($this->_SQLite);
+			$this->_statements = array(
+				'save' => $this->_SQLite->prepare('REPLACE INTO cache(id,content,expire) VALUES(:id,:content,:expire)'),
+				'load' => $this->_SQLite->prepare('SELECT content FROM cache WHERE id = :id'),
+				'remove' => $this->_SQLite->prepare('DELETE FROM cache WHERE id = :id'),
+				'removeTagsById' => $this->_SQLite->prepare('DELETE FROM tag WHERE id = :id'),
+				'removeOrphanTags' => $this->_SQLite->prepare('DELETE FROM tag WHERE id NOT IN(SELECT id FROM cache)'),
+				'saveTag' => $this->_SQLite->prepare('INSERT OR IGNORE INTO tag(name,id) VALUES(:name,:id)'),
+				'getAllTags' => $this->_SQLite->prepare('SELECT DISTINCT(name) AS name FROM tag'),
+				'clearCache' => $this->_SQLite->prepare('DELETE FROM cache'),
+				'clearTags' => $this->_SQLite->prepare('DELETE FROM tag')
+			);
 		}
 		return $this->_SQLite;
 	}
@@ -77,7 +101,13 @@ class Ddm_Cache_Sqlite implements Ddm_Cache_Interface {
 	 */
 	public function save($id, $data, array $tags = NULL, $lifetime = 0){
 		$this->beginTransaction();
-		$result = $this->_exec("REPLACE INTO cache(id,content,expire) VALUES(".$this->_SQLite->quote($id).",".$this->_SQLite->quote($data).",".($lifetime ? $lifetime+$_SERVER['REQUEST_TIME'] : 0).")");
+		$requestTime = isset($_SERVER['REQUEST_TIME']) ? $_SERVER['REQUEST_TIME'] : time();
+		$result = $this->_execute($this->_statements['save'], array(
+			':id'=>$id,
+			':content'=>$data,
+			':expire'=>$lifetime ? $lifetime+$requestTime : 0
+		));
+		$this->_execute($this->_statements['removeTagsById'], array(':id'=>$id));
 		if($tags)$this->_saveTagIds($id,$tags);
 		return $result;
 	}
@@ -87,8 +117,10 @@ class Ddm_Cache_Sqlite implements Ddm_Cache_Interface {
 	 * @return string
 	 */
 	public function load($id){
-		$sth = $this->_SQLite->query("SELECT content FROM cache WHERE id=".$this->_SQLite->quote($id));
-		return $sth ? $sth->fetchColumn() : false;
+		$statement = $this->_statements['load'];
+		$this->_execute($statement, array(':id'=>$id));
+		$result = $statement->fetchColumn();
+		return $result===false ? false : $result;
 	}
 
 	/**
@@ -97,9 +129,9 @@ class Ddm_Cache_Sqlite implements Ddm_Cache_Interface {
 	 */
 	public function remove($id){
 		$this->beginTransaction();
-		$rid = $rtag = false;
-		$rid = $this->_exec("DELETE FROM cache WHERE id=".$this->_SQLite->quote($id)) and $rtag = $this->_exec("DELETE FROM tag WHERE id=".$this->_SQLite->quote($id));
-		return $rid && $rtag;
+		$this->_execute($this->_statements['remove'], array(':id'=>$id));
+		$this->_execute($this->_statements['removeTagsById'], array(':id'=>$id));
+		return true;
 	}
 
 	/**
@@ -107,13 +139,13 @@ class Ddm_Cache_Sqlite implements Ddm_Cache_Interface {
 	 * @return bool
 	 */
 	public function removeByTags(array $tags){
+		if(!$tags)return true;
 		$this->beginTransaction();
-		$rid = $rtag = false;
-		if($ids = $this->getIdByTags($tags)){
-			$rid = $this->_exec("DELETE FROM cache WHERE id IN(".$this->_getArrayValues($ids).")")
-				and $rtag = $this->_exec("DELETE FROM tag WHERE name IN(".$this->_getArrayValues($tags).")");
-		}
-		return $rid && $rtag;
+		$placeholders = $this->_getPlaceholders(count($tags));
+		$statement = $this->_SQLite->prepare('DELETE FROM cache WHERE id IN(SELECT id FROM tag WHERE name IN('.$placeholders.'))');
+		$this->_execute($statement, array_values($tags));
+		$this->_execute($this->_statements['removeOrphanTags']);
+		return true;
 	}
 
 	/**
@@ -121,11 +153,8 @@ class Ddm_Cache_Sqlite implements Ddm_Cache_Interface {
 	 */
 	public function clear(){
 		$this->commit();
-		$this->_exec('DROP INDEX tag_name_id');
-		$this->_exec('DROP INDEX tag_id_index');
-		$this->_exec("DROP TABLE cache");
-		$this->_exec("DROP TABLE tag");
-		$this->_buildStructure($this->_SQLite);
+		$this->_execute($this->_statements['clearCache']);
+		$this->_execute($this->_statements['clearTags']);
 		return true;
 	}
 
@@ -136,7 +165,9 @@ class Ddm_Cache_Sqlite implements Ddm_Cache_Interface {
 	public function getIdByTags(array $tags){
 		$ids = array();
 		if($tags){
-			$sth = $this->_SQLite->query("SELECT DISTINCT(id) AS id FROM tag WHERE name IN(".$this->_getArrayValues($tags).")");
+			$placeholders = $this->_getPlaceholders(count($tags));
+			$sth = $this->_SQLite->prepare('SELECT DISTINCT(id) AS id FROM tag WHERE name IN('.$placeholders.')');
+			$this->_execute($sth, array_values($tags));
 			foreach($sth as $row){
 				$ids[$row['id']] = $row['id'];
 			}
@@ -149,24 +180,24 @@ class Ddm_Cache_Sqlite implements Ddm_Cache_Interface {
 	 */
 	public function getAllTags(){
 		$tags = array();
-		$sth = $this->_SQLite->query("SELECT DISTINCT(name) AS name FROM tag");
-		foreach($sth as $row){
+		$statement = $this->_statements['getAllTags'];
+		$this->_execute($statement);
+		foreach($statement as $row){
 			$tags[] = $row['name'];
 		}
 		return $tags;
 	}
 
 	/**
-	 * @param array $array
+	 * @param int $count
 	 * @return string
 	 */
-	protected function _getArrayValues(array $array){
-		$values = '';
-		foreach($array as $value){
-			$values=='' or $values .= ',';
-			$values .= $this->_SQLite->quote($value);
+	protected function _getPlaceholders($count){
+		$placeholders = array();
+		for($i=0; $i<$count; $i++){
+			$placeholders[] = '?';
 		}
-		return $values;
+		return implode(',', $placeholders);
 	}
 
 	/**
@@ -175,24 +206,25 @@ class Ddm_Cache_Sqlite implements Ddm_Cache_Interface {
 	 * @return Ddm_Cache_Sqlite
 	 */
 	protected function _saveTagIds($id, array $tags){
+		$statement = $this->_statements['saveTag'];
 		foreach($tags as $tag){
-			$this->_exec("INSERT OR IGNORE INTO tag(name,id) VALUES (".$this->_SQLite->quote($tag).",".$this->_SQLite->quote($id).")");
+			$this->_execute($statement, array(':name'=>$tag,':id'=>$id));
 		}
 		return $this;
 	}
 
 	/**
-	 * @param string $sql
+	 * @param PDOStatement $statement
+	 * @param array $parameters
 	 * @return bool
 	 */
-	protected function _exec($sql){
-		$result = $this->_SQLite->exec($sql);
-		if(false===$result){
-			$arr = $this->_SQLite->errorInfo();
+	protected function _execute($statement, array $parameters = array()){
+		try{
+			return $statement->execute($parameters);
+		}catch(PDOException $e){
 			$this->rollBack();
-			throw new Exception($arr[2]."\r\nSQL:$sql");
+			throw $e;
 		}
-		return $result;
 	}
 
 	/**
@@ -200,10 +232,10 @@ class Ddm_Cache_Sqlite implements Ddm_Cache_Interface {
 	 * @return Ddm_Cache_Sqlite
 	 */
 	private function _buildStructure($sqlite){
-        $sqlite->exec('CREATE TABLE cache (id VARCHAR(255) PRIMARY KEY, content BLOB,expire INT(10))');
-        $sqlite->exec('CREATE TABLE tag (name VARCHAR(255), id VARCHAR(255))');
-        $sqlite->exec('CREATE UNIQUE INDEX tag_name_id ON tag(name,id)');
-        $sqlite->exec('CREATE INDEX tag_id_index ON tag(id)');
+        $sqlite->exec('CREATE TABLE IF NOT EXISTS cache (id VARCHAR(255) PRIMARY KEY, content BLOB,expire INT(10))');
+        $sqlite->exec('CREATE TABLE IF NOT EXISTS tag (name VARCHAR(255), id VARCHAR(255))');
+        $sqlite->exec('CREATE UNIQUE INDEX IF NOT EXISTS tag_name_id ON tag(name,id)');
+        $sqlite->exec('CREATE INDEX IF NOT EXISTS tag_id_index ON tag(id)');
 		return $this;
     }
 }

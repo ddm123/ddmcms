@@ -1,16 +1,17 @@
 <?php
 /* @var $this Core_Model_Install */
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('language')."` (
-  `language_id` int(4) unsigned NOT NULL auto_increment,
-  `language_code` varchar(25) NOT NULL default '',
-  `language_name` varchar(32) NOT NULL default '',
-  `is_enable` tinyint(1) unsigned NULL default '0',
-  `position` int(4) unsigned NOT NULL default '0',
-  PRIMARY KEY (`language_id`),
-  UNIQUE KEY `language_code` (`language_code`),
-  KEY `is_enable` (`is_enable`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('language', function ($table) {
+  $table->integer('language_id')->unsigned()->nullable(false)->autoIncrement();
+  $table->string('language_code',25)->nullable(false)->default('');
+  $table->string('language_name',32)->nullable(false)->default('');
+  $table->tinyInteger('is_enable')->unsigned()->nullable(false)->default(0);
+  $table->integer('position')->unsigned()->nullable(false)->default(0);
+  $table->primary(array('language_id'));
+  $table->unique(array('language_code'), 'language_language_code');
+  $table->index(array('is_enable'), 'language_is_enable');
+  $table->engine('InnoDB');
+});
 
 $this->addConfig('web/language/default_language','0');
 $this->addConfig('web/language/default_code','zh_cn');

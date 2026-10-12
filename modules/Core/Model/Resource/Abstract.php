@@ -51,8 +51,8 @@ abstract class Core_Model_Resource_Abstract {
 	 */
 	protected function _getSaveData(Core_Model_Abstract $object){
 		$dataValue = array();
-		foreach($this->getFields($this->_mainTableName) as $key=>$row){
-			if($object->issetData($key) && $object->$key!=$object->getOrigData($key))$dataValue[$key] = $object->$key;
+		foreach($this->getFields($this->_mainTableName) as $field){
+			if($object->issetData($field) && $object->$field!=$object->getOrigData($field))$dataValue[$field] = $object->$field;
 		}
 		return $dataValue;
 	}
@@ -127,18 +127,14 @@ abstract class Core_Model_Resource_Abstract {
 	/**
 	 * 获取字段列表
 	 * @param string $table
-	 * @return array
+	 * @return string[]
 	 */
 	public function getFields($table){
 		if($table==''){
 			throw new InvalidArgumentException('$table parameter is empty');
 		}
 		if(!isset($this->_fields[$table])){
-			$this->_fields[$table] = array();
-			$stmt = Ddm_Db::getReadConn()->query("SHOW COLUMNS FROM ".Ddm_Db::getTable($table));
-			while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
-				$this->_fields[$table][$row['Field']] = $row;
-			}
+			$this->_fields[$table] = Ddm_Db::schema()->getColumnListing($table);
 		}
 		return $this->_fields[$table];
 	}
@@ -166,7 +162,7 @@ abstract class Core_Model_Resource_Abstract {
 	 * @return Core_Model_Resource_Abstract
 	 */
 	public function load(Core_Model_Abstract $object, $value, $field = NULL){
-		if($field===NULL)$field = "`main_table`.`$this->_primarykey`";
+		if($field===NULL)$field = "main_table.$this->_primarykey";
 		$select = $this->_getLoadSelect($this->_mainTableName,$field, $value);
 		if($result = $select->first()){
 			$object->addData($result);

@@ -17,8 +17,8 @@ class Step_Setting extends Step_Abstract {
 	 */
 	public function getDbDrivers(){
 		$drivers = array();
-		if(extension_loaded('mysqli'))$drivers['Ddm_Db_Mysqli'] = 'Mysqli';
-		if(extension_loaded('mysql'))$drivers['Ddm_Db_Mysql'] = 'Mysql';
+		if(extension_loaded('pdo_mysql'))$drivers['Ddm_Db_PDO_Mysql'] = 'MySQL';
+		if(extension_loaded('pdo_sqlite'))$drivers['Ddm_Db_PDO_Sqlite'] = 'SQLite';
 		return $drivers;
 	}
 
@@ -29,7 +29,7 @@ class Step_Setting extends Step_Abstract {
 		$drivers = array();
 		if(extension_loaded('apc'))$drivers['Ddm_Cache_Apc'] = 'Apc';
 		$drivers['Ddm_Cache_File'] = 'File';
-		if(extension_loaded('pdo_sqlite'))$drivers['Ddm_Cache_Sqlite'] = 'Sqlite';
+		if(extension_loaded('pdo_sqlite'))$drivers['Ddm_Cache_Sqlite'] = 'SQLite';
 		return $drivers;
 	}
 
@@ -50,11 +50,11 @@ class Step_Setting extends Step_Abstract {
 		if($this->_elements===NULL){
 			$this->_elements = array(
 				array('label'=>'数据库','elements'=>array(
-					'db_driver'=>array('label'=>'MySQL扩展库','type'=>'select','values'=>$this->getDbDrivers(),'value'=>$this->getPost('db_driver'),'notice'=>'如果你不知道选择哪个, 请保留默认'),
-					'db_host'=>array('label'=>'数据库主机','type'=>'text','value'=>$this->getPost('db_host') ? $this->getPost('db_host') : 'localhost'),
-					'db_port'=>array('label'=>'MySQL端口','type'=>'text','value'=>$this->getPost('db_port') ? (int)$this->getPost('db_port') : '3306'),
-					'db_username'=>array('label'=>'MySQL用户名','type'=>'text','value'=>$this->getPost('db_username',true)),
-					'db_password'=>array('label'=>'MySQL密码','type'=>'password','value'=>$this->getPost('db_password',true)),
+					'db_driver'=>array('label'=>'数据库类型','type'=>'select','values'=>$this->getDbDrivers(),'value'=>$this->getPost('db_driver')),
+					'db_host'=>array('label'=>'主机','type'=>'text','value'=>$this->getPost('db_host') ? $this->getPost('db_host') : 'localhost'),
+					'db_port'=>array('label'=>'端口','type'=>'text','value'=>$this->getPost('db_port') ? (int)$this->getPost('db_port') : '3306'),
+					'db_username'=>array('label'=>'用户名','type'=>'text','value'=>$this->getPost('db_username',true)),
+					'db_password'=>array('label'=>'密码','type'=>'password','value'=>$this->getPost('db_password',true)),
 					'db_name'=>array('label'=>'数据库名','type'=>'text','value'=>$this->getPost('db_name')),
 					'db_tablepre'=>array('label'=>'表名前缀','type'=>'text','value'=>$this->getPost('db_tablepre') ? $this->getPost('db_tablepre') : 'ddmcms_','notice'=>'建议修改为一个不容易让别人猜到的前缀')
 				)),

@@ -91,10 +91,10 @@ class Ddm_Db {
 		if(!isset(self::$_connections[$name])){
 			self::_getDatabaseConfig();
 			if(isset(self::$_databaseConfig[$name])){
-				self::$_connections[$name] = new self::$_databaseConfig[$name]['driver'](self::$_databaseConfig[$name]['host'],self::$_databaseConfig[$name]['username'],self::$_databaseConfig[$name]['password'],self::$_databaseConfig[$name]['dbname'],self::$_databaseConfig[$name]['port'],self::$_databaseConfig[$name]['character'],self::$_databaseConfig[$name]['use_pconnect']);
+				self::$_connections[$name] = new self::$_databaseConfig[$name]['driver'](self::$_databaseConfig[$name]);
 			}else if(isset(self::$_databaseConfig['driver'])){
 				if(self::$_connections)return self::$_connections[$name] = current(self::$_connections);
-				self::$_connections[$name] = new self::$_databaseConfig['driver'](self::$_databaseConfig['host'],self::$_databaseConfig['username'],self::$_databaseConfig['password'],self::$_databaseConfig['dbname'],self::$_databaseConfig['port'],self::$_databaseConfig['character'],self::$_databaseConfig['use_pconnect']);
+				self::$_connections[$name] = new self::$_databaseConfig['driver'](self::$_databaseConfig);
 			}else{
 				throw new Exception("'$name' database driver is not defined.");
 			}
@@ -109,6 +109,14 @@ class Ddm_Db {
 		return self::$_connections;
 	}
 
+	public static function clearCache(){
+		foreach(self::$_connections as $connection){
+			$connection->close();
+		}
+		self::$_connections = array();
+		self::$_databaseConfig = NULL;
+	}
+
 	/**
 	 * Get table name
 	 * @param string $table
@@ -117,6 +125,25 @@ class Ddm_Db {
 	public static function getTable($table){
 		self::_getDatabaseConfig();
 		return self::$_databaseConfig['tablepre'].$table;
+	}
+
+	/**
+	 * 获取数据库结构管理器
+	 * @return Ddm_Db_Schema
+	 */
+	public static function schema(){
+		$connection = self::getWriteConn();
+		$connectionClass = get_class($connection);
+		$connectionPrefix = 'Ddm_Db_PDO_';
+		if(strpos($connectionClass, $connectionPrefix)!==0){
+			throw new InvalidArgumentException('Schema grammar is not defined for this database driver.');
+		}
+
+		$grammarClass = 'Ddm_Db_Schema_Grammar_'.substr($connectionClass, strlen($connectionPrefix));
+		if(!class_exists($grammarClass)){
+			throw new InvalidArgumentException('Schema grammar "'.$grammarClass.'" is not defined.');
+		}
+		return new Ddm_Db_Schema($connection, self::getTable(''), new $grammarClass());
 	}
 
 	/**

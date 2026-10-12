@@ -10,7 +10,7 @@
 /**
  * @method Admin_Model_Resource_Admin getResource()
  * @property string $admin_name
- * @property int $admin_loginnum
+ * @property int $loginnum
  * @property int $is_active
  * @property int $edit_name
  * @property int $edit_pass
@@ -157,7 +157,7 @@ class Admin_Model_Admin extends Core_Model_Abstract {
 	 * @return string|array
 	 */
 	public function getCookieHash($asArray = false){
-		$data = $this->getId() ? array($this->admin_id,$this->admin_logintime,md5("$this->admin_name/$this->admin_pass/".Ddm::getConfig()->getConfigValue('hash_key'))) : array();
+		$data = $this->getId() ? array($this->admin_id,$this->logintime,md5("$this->admin_name/$this->admin_pass/".Ddm::getConfig()->getConfigValue('hash_key'))) : array();
 		if($asArray)return $data;
 		return $data ? "$data[0]-$data[1]-$data[2]" : '';
 	}
@@ -248,9 +248,9 @@ class Admin_Model_Admin extends Core_Model_Abstract {
 	protected function _afterSuccessfulLogin(){
 		if($this->admin_id){
 			$this->addData(array(
-				'admin_loginnum'=>$this->admin_loginnum+1,
-				'admin_prevtime'=>$this->admin_logintime,
-				'admin_logintime'=>Ddm_Request::server()->REQUEST_TIME
+				'loginnum'=>$this->loginnum+1,
+				'prevtime'=>$this->logintime,
+				'logintime'=>Ddm_Request::server()->REQUEST_TIME
 			))->save();
 			$this->_isLoggedIn = true;
 			$this->_saveLoggedInStatus();
@@ -273,15 +273,16 @@ class Admin_Model_Admin extends Core_Model_Abstract {
 	}
 
 	protected function _beforeSave(){
-		if($this->groups_position){
-			$groupIds = Ddm_Db::table(Ddm_Db::getTable('admin_group'))
-				->whereIn('group_id',array_keys($this->groups_position))
-				->pluck(array('group_id'));
+		if($groupsPosition = $this->groups_position){
+			$groupIds = Ddm_Db::table('admin_group')
+				->whereIn('group_id',array_keys($groupsPosition))
+				->pluck('group_id');
 			if($groupIds){
-				foreach($this->groups_position as $groupId=>$position){
-					if(!in_array($groupId,$groupIds))unset($this->groups_position[$groupId]);
-					else $this->groups_position[$groupId] = (int)$position;
+				foreach($groupsPosition as $groupId=>$position){
+					if(!in_array($groupId,$groupIds))unset($groupsPosition[$groupId]);
+					else $groupsPosition[$groupId] = (int)$position;
 				}
+				$this->groups_position = $groupsPosition;
 			}else{
 				$this->unsetData('groups_position');
 			}
@@ -296,11 +297,11 @@ class Admin_Model_Admin extends Core_Model_Abstract {
 		}else{
 			$this->admin_pass = $this->getOrigData('admin_pass') or $this->unsetData('admin_pass');
 		}
-		if(!$this->getId() && !$this->admin_logintime){
-			$this->admin_logintime = Ddm_Request::server()->REQUEST_TIME;
+		if(!$this->getId() && !$this->logintime){
+			$this->logintime = Ddm_Request::server()->REQUEST_TIME;
 		}
-		if(!$this->getId() && !$this->admin_prevtime){
-			$this->admin_prevtime = Ddm_Request::server()->REQUEST_TIME;
+		if(!$this->getId() && !$this->prevtime){
+			$this->prevtime = Ddm_Request::server()->REQUEST_TIME;
 		}
 
 		return parent::_beforeSave();

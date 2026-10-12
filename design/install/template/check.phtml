@@ -4,6 +4,7 @@
 		<div class="install-ui">
 			<h1>必须解决下面的问题, 安装才能继续</h1>
 			<div class="check-result">
+				<p>当前PHP版本：<?php echo $this->getPHPVersion();?></p>
 				<ol>
 <?php foreach($this->getCheckResult() as $error){?>
 					<li><?php echo $error;?></li>

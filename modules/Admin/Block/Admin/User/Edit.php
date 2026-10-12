@@ -59,7 +59,7 @@ class Admin_Block_Admin_User_Edit extends Admin_Block_Widget_Form {
 		->addElement('loginnum',array(
 			'label'=>Ddm::getTranslate('admin')->translate('登录次数'),
 			'type'=>'text','name'=>'loginnum','size'=>10,
-			'value'=>$admin ? $admin->admin_loginnum : '0'
+			'value'=>$admin ? $admin->loginnum : '0'
 		))
 		->addElement('groups',array(
 			'label'=>Ddm::getTranslate('admin')->translate('隶属于'),

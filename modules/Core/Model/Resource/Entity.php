@@ -52,7 +52,7 @@ abstract class Core_Model_Resource_Entity extends Core_Model_Resource_Abstract {
 			$this->_attributeTables = array();
 			if($model instanceof Core_Model_Entity){
 				foreach($model->getAttributes() as $attribute){
-					/* @var $attribute Core_Model_Attribute */
+					/** @var Core_Model_Attribute $attribute */
 					if($attribute->backend_type!='static' && ($table = $attribute->getTable())){
 						$this->_attributeTables[$table] = $table;
 					}
@@ -119,9 +119,11 @@ abstract class Core_Model_Resource_Entity extends Core_Model_Resource_Abstract {
 		$id = (int)$model->getId();
 		$attributesValue = array();
 		if($attributes = $model->getAttributes()){
+			$quote = Ddm_Db::getReadConn()->getIdentifierQuote();
 			foreach($this->getAttributeTables($model) as $table){
+				$table = $quote.str_replace($quote, $quote.$quote, $table).$quote;
 				$sql=='' or $sql .= ' UNION ALL ';
-				$sql .= "SELECT b.attribute_id,b.attribute_code,b.backend_type,a.language_id,a.`value` FROM `$table` AS a ".
+				$sql .= "SELECT b.attribute_id,b.attribute_code,b.backend_type,a.language_id,a.value FROM $table AS a ".
 						"LEFT JOIN ".Ddm_Db::getTable('attribute')." AS b ON(b.attribute_id=a.attribute_id) ".
 						"WHERE a.entity_id='$id' AND a.language_id".($languageId ? " IN(0,$languageId)" : '=0')." AND a.attribute_id IN(".implode(',',array_keys($attributes)).")";
 			}

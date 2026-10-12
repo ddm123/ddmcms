@@ -273,7 +273,11 @@ class Admin_Block_Widget_Form extends Core_Block_Abstract {
 			$jsvarname = preg_replace_callback('/[^A-Za-z]([A-Za-z])/',array($this,'getVarnameCallback'),$data['id']);
 			$tp = new Core_Block_Template(false);
 			$configJson = '{\'contentsCss\':[\''.Core_Block_Template::getTemplateFile('common.css','css','core',$tp,false).'\',\''.Core_Block_Template::getTemplateFile('style.css','css','core',$tp,false).'\']}';
-			$this->addJs('var '.$jsvarname.' = null;DOMLoaded(function(){isDisplayEditor(document.getElementById("is_use_editor_'.$data['id'].'"),\''.$data['id'].'\',\''.$jsvarname.'\','.$configJson.');});');
+			$js = 'var '.$jsvarname.' = null;';
+			if(is_file(SITE_ROOT.'/ckeditor/ckeditor.js')){
+				$js .= 'DOMLoaded(function(){isDisplayEditor(document.getElementById("is_use_editor_'.$data['id'].'"),\''.$data['id'].'\',\''.$jsvarname.'\','.$configJson.');});';
+			}
+			$this->addJs($js);
 			$html .= '<span style="display:block;line-height:100%;padding:0 0 4px 0;"><input type="checkbox" id="is_use_editor_'.$data['id'].'" value="1" onclick="isDisplayEditor(this,\''.$data['id'].'\',\''.$jsvarname.'\','.$configJson.')" /> <label for="is_use_editor_'.$data['id'].'">'.Ddm::getTranslate('admin')->translate('使用可视化编辑').'</label></span>';
 		}
 		$data['class'] = isset($data['class']) ? "{$data['type']} {$data['class']}" : $data['type'];

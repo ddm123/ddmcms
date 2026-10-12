@@ -17,6 +17,14 @@ class Ddm_Cache_File implements Ddm_Cache_Interface {
 	}
 
 	/**
+	 * 返回绝对路径，末尾不带斜杠
+	 * @return string
+	 */
+	public function getCacheDir(){
+		return SITE_ROOT.DIRECTORY_SEPARATOR.$this->_options['cache_dir'];
+	}
+
+	/**
 	 * param string $id
 	 * @param string $data
 	 * @param array $tags

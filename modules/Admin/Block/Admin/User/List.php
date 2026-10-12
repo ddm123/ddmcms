@@ -21,7 +21,7 @@ class Admin_Block_Admin_User_List extends Admin_Block_List_Abstract {
 		$this->_grid->getFieldValueUrl = Ddm::getLanguage()->getUrl('*/*/get-field-value');
 		$this->_grid->saveFieldValueUrl = Ddm::getLanguage()->getUrl('*/*/save-field-value');
 
-		$select = Ddm_Db::table(array('a'=>Ddm_Db::getTable('admin_user')))->select(array('a.*'));
+		$select = Ddm_Db::table(array('a'=>'admin_user'))->select(array('a.*'));
 		$this->_grid->setSelect($select);
 
 		$this->_loggedInAdminId = Admin_Model_Admin::loggedInAdmin()->getId();
@@ -64,8 +64,8 @@ class Admin_Block_Admin_User_List extends Admin_Block_List_Abstract {
 				'label'=>Ddm::getTranslate('admin')->translate('登录次数'),
 				'width'=>80,
 				'type'=>'number',
-				'field_name'=>'admin_loginnum',
-				'column'=>'a.admin_loginnum',
+				'field_name'=>'loginnum',
+				'column'=>'a.loginnum',
 				'search'=>true,
 				'edit'=>true,
 				'sort'=>true
@@ -73,8 +73,8 @@ class Admin_Block_Admin_User_List extends Admin_Block_List_Abstract {
 			->addColumn('logintime',array(
 				'label'=>Ddm::getTranslate('admin')->translate('最后登录'),
 				'type'=>'datetime',
-				'field_name'=>'admin_logintime',
-				'column'=>'a.admin_logintime',
+				'field_name'=>'logintime',
+				'column'=>'a.logintime',
 				'search'=>true,
 				'sort'=>true
 			))

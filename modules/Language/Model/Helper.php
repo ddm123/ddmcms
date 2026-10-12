@@ -16,7 +16,7 @@ class Language_Model_Helper {
 
 	public function __construct(){
 		$this->_languagePath = SITE_ROOT.'/data/languagedata';
-		is_dir($this->_languagePath) or mkdir($this->_languagePath, 0700, true);
+		if(Ddm::isInstalled() && !is_dir($this->_languagePath))mkdir($this->_languagePath, 0700, true);
 	}
 
 	public function __destruct() {

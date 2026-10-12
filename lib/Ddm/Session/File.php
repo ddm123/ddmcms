@@ -124,7 +124,7 @@ class Ddm_Session_File implements Ddm_Session_Interface {
 	 */
 	public function getLifeTime(){
 		if($this->_lifeTime===NULL){
-			$this->_lifeTime = Ddm::getConfig()->getConfigValue(Ddm_Cookie::CONFIG_PATH_COOKIE_LIFETIME)*60;
+			$this->_lifeTime = (float)Ddm::getConfig()->getConfigValue(Ddm_Cookie::CONFIG_PATH_COOKIE_LIFETIME) * 60;
 			if($this->_lifeTime<60){
 				$this->_lifeTime = (int)ini_get('session.gc_maxlifetime') or $this->_lifeTime = 1440;
 			}

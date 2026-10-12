@@ -1,21 +1,22 @@
 <?php
 /* @var $this Core_Model_Install */
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('config')."` (
-  `config_id` int(4) unsigned NOT NULL auto_increment,
-  `path` varchar(255) NOT NULL default '',
-  PRIMARY KEY  (`config_id`),
-  UNIQUE KEY `path` (`path`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('config', function ($table) {
+  $table->integer('config_id')->unsigned()->autoIncrement()->nullable(false);
+  $table->string('path',255)->nullable(false)->default('');
+  $table->primary(array('config_id'));
+  $table->unique(array('path'), 'config_path');
+  $table->engine('InnoDB');
+});
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('config_value')."` (
-  `config_value_id` int(8) unsigned NOT NULL auto_increment,
-  `config_id` int(4) unsigned NOT NULL default '0',
-  `language_id` int(4) unsigned NOT NULL default '0',
-  `config_value` text NULL,
-  PRIMARY KEY  (`config_value_id`),
-  UNIQUE KEY `config_id_language_id` (`config_id`,`language_id`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('config_value', function ($table) {
+  $table->integer('config_value_id')->unsigned()->autoIncrement()->nullable(false);
+  $table->integer('config_id')->unsigned()->nullable(false)->default(0);
+  $table->integer('language_id')->unsigned()->nullable(false)->default(0);
+  $table->text('config_value')->nullable(true);
+  $table->primary(array('config_value_id'));
+  $table->unique(array('config_id', 'language_id'), 'config_value_config_id_language_id');
+});
 
 $this->getModel('config','config')->addData(array('path'=>'web/language/inc_url','values'=>array(0=>'1')))->save();
 $this->getModel('config','config')->addData(array('path'=>'web/language/default_language','values'=>array(0=>'0')))->save();

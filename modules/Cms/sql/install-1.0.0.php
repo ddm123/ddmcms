@@ -1,48 +1,52 @@
 <?php
-/* @var $this Core_Model_Install */
+/** @var Core_Model_Install $this */
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('onepage')."` (
-  `onepage_id` int(10) unsigned NOT NULL auto_increment,
-  `create_at` int(10) unsigned NULL DEFAULT '0',
-  `update_at` int(10) unsigned NULL DEFAULT '0',
-  PRIMARY KEY  (`onepage_id`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('onepage', function ($table) {
+	$table->integer('onepage_id')->unsigned()->nullable(false)->autoIncrement();
+	$table->integer('create_at')->unsigned()->nullable(false)->default(0);
+	$table->integer('update_at')->unsigned()->nullable(false)->default(0);
+	$table->primary(array('onepage_id'));
+	$table->engine('InnoDB');
+});
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('widget')."` (
-  `widget_id` int(10) unsigned NOT NULL auto_increment,
-  `identifier` varchar(128) NOT NULL default '',
-  `create_at` int(10) unsigned NULL DEFAULT '0',
-  `update_at` int(10) unsigned NULL DEFAULT '0',
-  PRIMARY KEY  (`widget_id`),
-  UNIQUE KEY `identifier` (`identifier`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('widget', function ($table) {
+	$table->integer('widget_id')->unsigned()->nullable(false)->autoIncrement();
+	$table->string('identifier', 128)->nullable(false)->default('');
+	$table->integer('create_at')->unsigned()->nullable(false)->default(0);
+	$table->integer('update_at')->unsigned()->nullable(false)->default(0);
+	$table->primary(array('widget_id'));
+	$table->unique(array('identifier'),'widget_identifier');
+});
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('cms_value_int')."` (
-  `entity_id` int(10) unsigned NOT NULL default '0',
-  `attribute_id` int(4) unsigned NOT NULL default '0',
-  `language_id` int(4) unsigned NOT NULL default '0',
-  `value` int(10) NULL default NULL,
-  UNIQUE KEY `entity_id_attribute_id_language_id` (`entity_id`,attribute_id,`language_id`),
-  KEY `entity_id` (`entity_id`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('cms_value_int', function ($table) {
+	$table->integer('entity_id')->unsigned()->nullable(false)->default(0);
+	$table->integer('attribute_id')->unsigned()->nullable(false)->default(0);
+	$table->integer('language_id')->unsigned()->nullable(false)->default(0);
+	$table->integer('value')->unsigned()->nullable(true);
+	$table->primary(array('entity_id','attribute_id','language_id'));
+	$table->index(array('attribute_id'),'cms_value_int_attribute_id');
+	$table->engine('InnoDB');
+});
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('cms_value_varchar')."` (
-  `entity_id` int(10) unsigned NOT NULL default '0',
-  `attribute_id` int(4) unsigned NOT NULL default '0',
-  `language_id` int(4) unsigned NOT NULL default '0',
-  `value` varchar(255) NULL default NULL,
-  UNIQUE KEY `entity_id_attribute_id_language_id` (`entity_id`,attribute_id,`language_id`),
-  KEY `entity_id` (`entity_id`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('cms_value_varchar', function ($table) {
+	$table->integer('entity_id')->unsigned()->nullable(false)->default(0);
+	$table->integer('attribute_id')->unsigned()->nullable(false)->default(0);
+	$table->integer('language_id')->unsigned()->nullable(false)->default(0);
+	$table->string('value',255)->nullable(true);
+	$table->primary(array('entity_id','attribute_id','language_id'));
+	$table->index(array('attribute_id'),'cms_value_int_attribute_id');
+	$table->engine('InnoDB');
+});
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('cms_value_text')."` (
-  `entity_id` int(10) unsigned NOT NULL default '0',
-  `attribute_id` int(4) unsigned NOT NULL default '0',
-  `language_id` int(4) unsigned NOT NULL default '0',
-  `value` text NULL default NULL,
-  UNIQUE KEY `entity_id_attribute_id_language_id` (`entity_id`,attribute_id,`language_id`),
-  KEY `entity_id` (`entity_id`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('cms_value_text', function ($table) {
+	$table->integer('entity_id')->unsigned()->nullable(false)->default(0);
+	$table->integer('attribute_id')->unsigned()->nullable(false)->default(0);
+	$table->integer('language_id')->unsigned()->nullable(false)->default(0);
+	$table->text('value')->nullable(true);
+	$table->primary(array('entity_id','attribute_id','language_id'));
+	$table->index(array('attribute_id'),'cms_value_int_attribute_id');
+	$table->engine('InnoDB');
+});
 
 if(!Ddm::getHelper('core')->getEntityAttribute('onepage','title')){
 	$this->getModel('core','attribute')->addData(array('entity_type'=>'onepage','attribute_code'=>'title','backend_type'=>'varchar','backend_table'=>'cms',

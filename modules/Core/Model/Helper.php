@@ -108,7 +108,7 @@ class Core_Model_Helper {
 	public function saveFile($filename,$data,$flags = LOCK_EX,$mode = 0755){
 		$path = dirname($filename);
 		if($path && $path!='.'){
-			if(strpos(strtr($path,'\\','/'),SITE_ROOT.'/data/')===0){
+			if(strpos(strtr($filename,'\\','/'),SITE_ROOT.'/data/')===0){
 				($res = @file_put_contents($filename,$data,$flags)) or (mkdir($path,$mode,true) and $res = file_put_contents($filename,$data,$flags));
 				if($res!==false)return $res;
 			}

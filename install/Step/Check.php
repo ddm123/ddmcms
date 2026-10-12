@@ -17,8 +17,11 @@ class Step_Check extends Step_Abstract {
 	public function check(){
 		if($this->_checkResult===NULL){
 			$this->_checkResult = array();
-			if(!extension_loaded('mysqli') && !extension_loaded('mysql')){
-				$this->_checkResult[] = '你需要安装mysqli或者mysql的PHP扩展, 可以安装其中任意一种';
+			if(!extension_loaded('pdo_mysql') && !extension_loaded('pdo_sqlite')){
+				$this->_checkResult[] = '你需要安装PDO数据库扩展';
+			}
+			if(!extension_loaded('xml')){
+				$this->_checkResult[] = '你需要安装XML扩展库, 应用于配置文件解析';
 			}
 			if(!extension_loaded('gd')){
 				$this->_checkResult[] = '你需要安装GD扩展库, 应用于图像处理';
@@ -31,7 +34,7 @@ class Step_Check extends Step_Abstract {
 			}
 
 			if(!is_dir(SITE_ROOT.'/data')){
-				if(false===@mkdir($path,0777)){
+				if(false===@mkdir(SITE_ROOT.'/data',0777)){
 					$this->_checkResult[] = '请在'.SITE_ROOT.'/目录下创建一个名为data的文件夹, 并设置有写入的权限';
 				}
 			}else{
@@ -50,6 +53,13 @@ class Step_Check extends Step_Abstract {
 	 */
 	public function getCheckResult(){
 		return $this->_checkResult;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getPHPVersion(){
+		return phpversion();
 	}
 
 	protected function _beforeRun() {

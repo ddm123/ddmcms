@@ -26,7 +26,7 @@ class Config_Model_Resource_Config extends Core_Model_Resource_Abstract {
 			$join->where('b.language_id','=',0);
 		});
 		if($languageId){
-			$select->leftJoin(array('c'=>Ddm_Db::getTable('config_value')),function(Ddm_Db_JoinClause $join) use($languageId){
+			$select->leftJoin(array('c'=>'config_value'),function(Ddm_Db_JoinClause $join) use($languageId){
 				$join->on('c.config_id','=','a.config_id');
 				$join->where('c.language_id','=',$languageId);
 			});
@@ -45,7 +45,6 @@ class Config_Model_Resource_Config extends Core_Model_Resource_Abstract {
 	 */
 	public function getConfigs($languageId){
 		$languageId = (int)$languageId;
-		$valueTable = Ddm_Db::getTable('config_value');
 		$select = Ddm_Db::table(array('a'=>$this->getMainTableName()));
 		$select->leftJoin(array('b'=>'config_value'),function(Ddm_Db_JoinClause $join){
 			$join->on('b.config_id','=','a.config_id');
@@ -92,7 +91,6 @@ class Config_Model_Resource_Config extends Core_Model_Resource_Abstract {
 	 */
 	public function getConfigsFromLanguageId($languageId){
 		$languageId = (int)$languageId;
-		$valueTable = Ddm_Db::getTable('config_value');
 		$select = Ddm_Db::table(array('a'=>$this->getMainTableName()));
 		$select->leftJoin(array('b'=>'config_value'),function(Ddm_Db_JoinClause $join){
 			$join->on('b.config_id','=','a.config_id');

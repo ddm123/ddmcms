@@ -1,23 +1,25 @@
 <?php
-/* @var $this Core_Model_Install */
+/** @var Core_Model_Install $this */
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('news_category')."` (
-  `category_id` int(4) unsigned NOT NULL auto_increment,
-  `position` int(10) unsigned NULL DEFAULT '0',
-  `create_at` int(10) unsigned NULL DEFAULT '0',
-  `update_at` int(10) unsigned NULL DEFAULT '0',
-  PRIMARY KEY  (`category_id`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('news_category', function ($table) {
+	$table->integer('category_id')->unsigned()->nullable(false)->autoIncrement();
+	$table->integer('position')->unsigned()->nullable(false)->default(0);
+	$table->integer('create_at')->unsigned()->nullable(false)->default(0);
+	$table->integer('update_at')->unsigned()->nullable(false)->default(0);
+	$table->primary(array('category_id'));
+	$table->engine('InnoDB');
+});
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('news')."` (
-  `news_id` int(10) unsigned NOT NULL auto_increment,
-  `category_id` int(4) unsigned NULL DEFAULT '0',
-  `views` int(10) unsigned NOT NULL DEFAULT '0',
-  `create_at` int(10) unsigned NULL DEFAULT '0',
-  `update_at` int(10) unsigned NULL DEFAULT '0',
-  PRIMARY KEY  (`news_id`),
-  KEY `category_id` (`category_id`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('news', function ($table) {
+	$table->integer('news_id')->unsigned()->nullable(false)->autoIncrement();
+	$table->integer('category_id')->unsigned()->nullable(false)->default(0);
+	$table->integer('views')->unsigned()->nullable(false)->default(0);
+	$table->integer('update_at')->unsigned()->nullable(false)->default(0);
+	$table->integer('create_at')->unsigned()->nullable(false)->default(0);
+	$table->primary(array('news_id'));
+	$table->index(array('category_id'), 'news_category_id');
+	$table->engine('InnoDB');
+});
 
 $this->addAttribute(array(
 	array('entity_type'=>'news_category','attribute_code'=>'name','backend_type'=>'varchar','backend_table'=>'news',

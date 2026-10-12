@@ -1,54 +1,57 @@
 <?php
 /* @var $this Core_Model_Install */
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('admin_group')."` (
-  `group_id` int(4) unsigned NOT NULL auto_increment,
-  `group_name` varchar(25) NOT NULL default '',
-  PRIMARY KEY (`group_id`),
-  UNIQUE KEY `group_name` (`group_name`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('admin_group', function ($table) {
+  $table->integer('group_id')->unsigned()->nullable(false)->autoIncrement();
+  $table->string('group_name',25)->nullable(false)->default('');
+  $table->primary(array('group_id'));
+  $table->unique(array('group_name'),'admin_group_group_name');
+  $table->engine('InnoDB');
+});
+Ddm_Db::schema()->createIfNotExists('admin_user', function ($table) { 
+  $table->integer('admin_id')->unsigned()->nullable(false)->autoIncrement();
+  $table->string('admin_name',50)->nullable(false)->default('');
+  $table->string('admin_pass',32)->nullable(false)->default('');
+  $table->integer('loginnum')->unsigned()->nullable(false)->default(0);
+  $table->integer('logintime')->unsigned()->nullable(false)->default(0);
+  $table->integer('prevtime')->unsigned()->nullable(false)->default(0);
+  $table->tinyInteger('is_active')->unsigned()->nullable(false)->default(0);
+  $table->tinyInteger('edit_name')->unsigned()->nullable(false)->default(0);
+  $table->tinyInteger('edit_pass')->unsigned()->nullable(false)->default(0);
+  $table->text('extra')->nullable(true);
+  $table->primary(array('admin_id'));
+  $table->unique(array('admin_name'),'admin_name');
+  //$table->index(array('admin_name','admin_pass'),'admin_user_name_pass');
+  $table->engine('InnoDB');
+});
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('admin_user')."` (
-  `admin_id` int(4) unsigned NOT NULL auto_increment,
-  `admin_name` varchar(50) NOT NULL default '',
-  `admin_pass` char(32) NOT NULL default '',
-  `admin_loginnum` int(4) unsigned NULL default '0',
-  `admin_logintime` int(10) unsigned NULL default '0',
-  `admin_prevtime` int(10) unsigned NULL default '0',
-  `is_active` tinyint(1) unsigned NOT NULL default '0',
-  `edit_name` tinyint(1) unsigned NOT NULL default '0',
-  `edit_pass` tinyint(1) unsigned NOT NULL default '0',
-  `extra` text NULL default NULL,
-  PRIMARY KEY (`admin_id`),
-  UNIQUE KEY `admin_name` (`admin_name`),
-  KEY `name_pass` (`admin_name`,`admin_pass`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('admin_group_user', function ($table) {
+  $table->integer('group_id')->unsigned()->nullable(false)->default(0);
+  $table->integer('admin_id')->unsigned()->nullable(false)->default(0);
+  $table->integer('position')->unsigned()->nullable(false)->default(0);
+  $table->primary(array('group_id','admin_id'));
+  $table->index(array('position'), 'admin_group_user_position');
+  $table->engine('InnoDB');
+});
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('admin_group_user')."` (
-  `group_id` int(4) unsigned NULL default '0',
-  `admin_id` int(4) unsigned NULL default '0',
-  `position` int(8) unsigned NULL default '0',
-  PRIMARY KEY (`group_id`,`admin_id`),
-  KEY `position` (`position`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('admin_allow', function ($table) {
+  $table->integer('allow_id')->unsigned()->nullable(false)->autoIncrement();
+  $table->integer('group_id')->unsigned()->nullable(false)->default(0);
+  $table->string('path',200)->nullable(false)->default('');
+  $table->primary(array('allow_id'));
+  $table->unique(array('group_id','path'),'admin_allow_group_id_path');
+  $table->engine('InnoDB');
+});
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('admin_allow')."` (
-  `allow_id` int(10) unsigned NOT NULL auto_increment,
-  `group_id` int(4) unsigned NULL default '0',
-  `path` varchar(200) NOT NULL DEFAULT '',
-  PRIMARY KEY  (`allow_id`),
-  UNIQUE KEY `admin_id_path` ( `group_id`,`path` ),
-  KEY `group_id` (`group_id`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
-
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('admin_allow_value')."` (
-  `allow_id` int(10) unsigned NOT NULL default '0',
-  `group_id` int(4) unsigned NULL default '0',
-  `allow_type` varchar(16) NOT NULL DEFAULT 'read',
-  `allow_value` tinyint(1) unsigned NULL default '0',
-  PRIMARY KEY `allow_id_allow_type` (`allow_id`,`allow_type`),
-  KEY `group_id` (`group_id`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('admin_allow_value', function ($table) {
+  $table->integer('allow_id')->unsigned()->nullable(false)->default(0);
+  $table->integer('group_id')->unsigned()->nullable(false)->default(0);
+  $table->string('allow_type',16)->nullable(false)->default('read');
+  $table->tinyInteger('allow_value')->unsigned()->nullable(false)->default(0);
+  $table->primary(array('allow_id','allow_type'));
+  $table->index(array('group_id'),'admin_allow_value_group_id');
+  $table->engine('InnoDB');
+});
 
 $group = $this->getModel('admin','group');
 $group->loadFromGroupName('Administrators');

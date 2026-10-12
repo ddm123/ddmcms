@@ -1,31 +1,33 @@
 <?php
 /* @var $this Core_Model_Install */
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('attribute')."` (
-  `attribute_id` int(4) unsigned NOT NULL auto_increment,
-  `entity_type` varchar(64) NOT NULL DEFAULT '',
-  `attribute_code` varchar(64) NOT NULL DEFAULT '',
-  `backend_type` varchar(16) NOT NULL DEFAULT 'static',
-  `backend_table` varchar(32) NULL DEFAULT NULL,
-  `frontend_type` varchar(16) NOT NULL DEFAULT '',
-  `frontend_label` varchar(225) NULL DEFAULT '',
-  `source_model` varchar(225) NULL DEFAULT NULL,
-  `is_required` tinyint(1) unsigned NULL default '0',
-  `is_global` tinyint(1) unsigned NULL default '0',
-  `is_system` tinyint(1) unsigned NULL default '0',
-  `is_visible` tinyint(1) unsigned NOT NULL default '1',
-  `note` varchar(255) NULL DEFAULT NULL,
-  `position` int(4) unsigned NOT NULL default '0',
-  PRIMARY KEY  (`attribute_id`),
-  UNIQUE KEY `entity_type_attribute_code` (`entity_type`,`attribute_code`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('attribute', function ($table) {
+  $table->integer('attribute_id')->unsigned()->autoIncrement()->nullable(false);
+  $table->string('entity_type',64)->nullable(false)->default('');
+  $table->string('attribute_code',64)->nullable(false)->default('');
+  $table->string('backend_type',16)->nullable(false)->default('static');
+  $table->string('backend_table',32)->nullable(true);
+  $table->string('frontend_type',16)->nullable(false)->default('');
+  $table->string('frontend_label',225)->nullable(true);
+  $table->string('source_model',225)->nullable(true);
+  $table->tinyInteger('is_required')->unsigned()->nullable(false)->default(0);
+  $table->tinyInteger('is_global')->unsigned()->nullable(false)->default(0);
+  $table->tinyInteger('is_system')->unsigned()->nullable(false)->default(0);
+  $table->tinyInteger('is_visible')->unsigned()->nullable(false)->default(1);
+  $table->string('note',255)->nullable(true);
+  $table->integer('position')->unsigned()->nullable(false)->default(0);
+  $table->primary(array('attribute_id'));
+  $table->unique(array('entity_type', 'attribute_code'), 'attribute_entity_type_attribute_code');
+  $table->engine('InnoDB');
+});
 
-$this->executeSql("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('url_index')."` (
-  `url_path` varchar(225) NOT NULL DEFAULT '',
-  `language_id` int(4) unsigned NOT NULL DEFAULT '0',
-  `module` varchar(64) NOT NULL DEFAULT '',
-  `controller` varchar(64) NULL DEFAULT NULL,
-  `action` varchar(64) NULL DEFAULT NULL,
-  `params` varchar(225) NULL DEFAULT NULL,
-  PRIMARY KEY  (`url_path`,`language_id`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+Ddm_Db::schema()->createIfNotExists('url_index', function ($table) {
+  $table->string('url_path',225)->nullable(false)->default('');
+  $table->integer('language_id')->unsigned()->nullable(false)->default(0);
+  $table->string('module',64)->nullable(false)->default('');
+  $table->string('controller',64)->nullable(true);
+  $table->string('action',64)->nullable(true);
+  $table->string('params',225)->nullable(true);
+  $table->primary(array('url_path', 'language_id'));
+  $table->engine('InnoDB');
+});

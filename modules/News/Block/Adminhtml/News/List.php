@@ -170,8 +170,8 @@ class News_Block_Adminhtml_News_List extends Admin_Block_List_Abstract {
 		}else{
 			if($fieldName=='category_name')
 				parent::applyFilter($columnOption,$this->getLanguageId()
-					? new Ddm_Db_Expression("IF(main_table.category_id='0','-',IFNULL(category2.`value`,`category`.`value`))")
-					: new Ddm_Db_Expression('IFNULL(`category`.`value`,\'-\')'),$value);
+					? new Ddm_Db_Expression("IF(main_table.category_id='0','-',IFNULL(category2.value,category.value))")
+					: new Ddm_Db_Expression('IFNULL(category.value,\'-\')'),$value);
 			else{
 				list($operator,$value) = $this->_grid->getCondition($columnOption,$value);
 				$this->_news->addAttributeToFilter($fieldName,$value,$operator);

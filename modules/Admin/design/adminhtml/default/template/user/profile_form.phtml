@@ -40,15 +40,15 @@ $admin = $this->getAdmin();
 	  </tr>
 	  <tr>
 		  <th><?php echo Ddm::getTranslate('admin')->translate('登录次数');?></th>
-		  <td><?php echo $admin->admin_loginnum;?></td>
+		  <td><?php echo $admin->loginnum;?></td>
 	  </tr>
 	  <tr>
 		  <th><?php echo Ddm::getTranslate('admin')->translate('最后登录');?></th>
-		  <td><?php echo Ddm::getHelper('core')->formatDateTime($admin->admin_logintime);?></td>
+		  <td><?php echo Ddm::getHelper('core')->formatDateTime($admin->logintime);?></td>
 	  </tr>
 	  <tr>
 		  <th><?php echo Ddm::getTranslate('admin')->translate('上一次登录');?></th>
-		  <td><?php echo Ddm::getHelper('core')->formatDateTime($admin->admin_prevtime);?></td>
+		  <td><?php echo Ddm::getHelper('core')->formatDateTime($admin->prevtime);?></td>
 	  </tr>
 	  <tr>
 		  <th><?php echo Ddm::getTranslate('core')->translate('选项');?></th>

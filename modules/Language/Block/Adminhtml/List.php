@@ -79,7 +79,7 @@ class Language_Block_Adminhtml_List extends Admin_Block_List_Abstract {
 				'label'=>Ddm::getTranslate('core')->translate('位置'),
 				'type'=>'number',
 				'field_name'=>'position',
-				'column'=>'a.`position`',
+				'column'=>'a.position',
 				'edit'=>true,
 				'sort'=>true
 			))

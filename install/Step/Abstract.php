@@ -59,8 +59,15 @@ abstract class Step_Abstract {
 	 * @return Step_Abstract
 	 */
 	public function clearCache(){
+		$cacheDevice = Ddm_Cache::singleton()->getCache();/** @var Ddm_Cache_File|Ddm_Cache_Sqlite $cacheDevice */
+		if($cacheDevice instanceof Ddm_Cache_File){
+			if(!is_dir($cacheDevice->getCacheDir()))return $this;
+		}else if($cacheDevice instanceof Ddm_Cache_Sqlite){
+			if(!file_exists($cacheDevice->getCacheDir()))return $this;
+		}
 		Ddm::getConfig()->clearCache();
 		Ddm_Cache::clear();
+		Ddm_Db::clearCache();
 		return $this;
 	}
 
@@ -68,13 +75,17 @@ abstract class Step_Abstract {
 	 * @return Step_Abstract
 	 */
 	public function run(){
-		$this->_beforeRun();
-		if($this->getTemplate()){
-			include SITE_ROOT.'/design/install/template/'.$this->_headerTemplate;
-			include SITE_ROOT.'/design/install/template/'.$this->getTemplate();
-			include SITE_ROOT.'/design/install/template/'.$this->_footerTemplate;
+		try {
+			$this->_beforeRun();
+			if($this->getTemplate()){
+				include SITE_ROOT.'/design/install/template/'.$this->_headerTemplate;
+				include SITE_ROOT.'/design/install/template/'.$this->getTemplate();
+				include SITE_ROOT.'/design/install/template/'.$this->_footerTemplate;
+			}
+			$this->_afterRun();
+		} catch (Exception $e) {
+			echo '<pre>'.$e->getMessage().'<br/>'.$e->getTraceAsString().'</pre>';
 		}
-		$this->_afterRun();
 		return $this;
 	}
 

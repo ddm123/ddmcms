@@ -16,25 +16,27 @@ class Ddm_Db_PDO_Sqlite implements Ddm_Db_Interface
     protected $_querynum = 0;
 
     /**
-     * @param string $ser 数据库文件路径(或 :memory:), 如果为空则使用 $db
-     * @param string $un 忽略
-     * @param string $pw 忽略
-     * @param string|null $db 数据库文件路径(当 $ser 为空时使用)
-     * @param string|null $port 忽略
-     * @param string|null $character 忽略
-     * @param bool $pconnect 忽略(SQLite不支持持久连接)
+     * @param array $config
+     * @return void
      */
-    public function __construct($ser = NULL, $un = NULL, $pw = NULL, $db = NULL, $port = NULL, $character = NULL, $pconnect = false)
+    public function __construct(array $config)
     {
-        $path = ($ser !== NULL && $ser !== '') ? $ser : $db;
-        if ($path === NULL || $path === '') {
+        if (!isset($config['dbname']) || $config['dbname'] === '') {
             $path = ':memory:';
+        }else{
+            $p = new Ddm_Path(SITE_ROOT);
+            $path = $p->join($config['dbname']);
+            $dir = dirname($path);
+            if (!is_dir($dir) && !@mkdir($dir, 0755, true)) {
+                throw new RuntimeException('目录 '.$dir.' 不存在');
+            }
         }
 
         $this->_pdo = new PDO('sqlite:'.$path, NULL, NULL, array(
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_EMULATE_PREPARES => false
         ));
+        $this->_pdo->exec('PRAGMA foreign_keys = ON');
     }
 
     /**
@@ -51,7 +53,7 @@ class Ddm_Db_PDO_Sqlite implements Ddm_Db_Interface
      */
     public function close($dblink = false)
     {
-        //$this->_pdo = NULL;
+        $this->_pdo = NULL;
         return $this;
     }
 

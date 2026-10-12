@@ -2,20 +2,17 @@ function showSubMemus(o,m,x,y){
 	var li = o, ul = li.getElementsByTagName("ul");
 	ul = ul.length ? ul[0] : false;
 	if(m && ul){
-		with(ul.style){
-			left = moveXbySlicePos(isNaN(x)?0:x,li)+"px";
-			top = "34px";
-			display = "block";
-		}
+		ul.style.left = moveXbySlicePos(isNaN(x)?0:x,li)+"px";
+		ul.style.top = "34px";
+		ul.style.display = "block";
 		if(is_ie){
-			if(document.getElementById("layer_iframe")){
-				with(document.getElementById("layer_iframe")){
-					style.left = ul.style.left;
-					style.top = ul.style.top;
-					style.width = ul.offsetWidth + 'px';
-					style.height = ul.offsetHeight + 'px';
-					style.visibility = "visible";
-				}
+			var iframe = document.getElementById("layer_iframe");
+			if(iframe){
+				iframe.style.left = ul.style.left;
+				iframe.style.top = ul.style.top;
+				iframe.style.width = ul.offsetWidth + 'px';
+				iframe.style.height = ul.offsetHeight + 'px';
+				iframe.style.visibility = "visible";
 			}else{
 				createIframeLayer(ul);
 			}

@@ -1,19 +1,20 @@
-<form method="post" action="./index.php?step=setup" onsubmit="return checkForm(this);">
+<form id="setting-form" method="post" action="./index.php?step=setup" onsubmit="return checkForm(this);">
 	<div class="main-body">
 <?php if($this->getPost('errors')){?>
 		<div class="errors"><?php echo $this->getPost('errors');?></div>
 <?php }?>
 		<div class="install-ui">
 			<h1>填写配置信息</h1>
+			<div>&nbsp;</div>
 			<div class="setting">
 				<?php
 foreach($this->getElements() as $group){
 	echo '<h2>'.$group['label'].'</h2>';
-	echo '<p>';
+	echo '<div style="margin-bottom:16px;">';
 	foreach($group['elements'] as $name=>$attributes){
-		echo $this->getElementHtml($name,$attributes).'<br />';
+		echo '<div id="'.$name.'_container">'.$this->getElementHtml($name,$attributes).'</div>';
 	}
-	echo '</p>';
+	echo '</div>';
 }
 ?>
 			</div>
@@ -25,8 +26,14 @@ foreach($this->getElements() as $group){
 <script type="text/javascript">
 function checkForm(form){
 	var elms = form.getElementsByTagName('input'),len = elms.length,result = ['',false];
+	var dbDriver = form.db_driver.value;
 	document.getElementById('submit-button').disabled = true;
 	for(var i = 0; i<len; i++){
+		if(dbDriver==='Ddm_Db_PDO_Sqlite'){
+			if(elms[i].name=='db_host' || elms[i].name=='db_port' || elms[i].name=='db_username' || elms[i].name=='db_password'){
+				continue;
+			}
+		}
 		if(elms[i].name!='db_password' && elms[i].name!='db_tablepre' && (elms[i].value==='' || /^\s+$/.test(elms[i].value))){
 			result[0] = getLabelText(elms[i])+'不能为空';
 		}else if(elms[i].value!='' && elms[i].name=='db_tablepre' && !(/^\w+$/.test(elms[i].value))){
@@ -63,4 +70,35 @@ function getLabelText(e){
 	}
 	return '';
 }
+function dbDriverChanged(target){
+	var inps = [
+		document.getElementById('setting-form').db_host,
+		document.getElementById('setting-form').db_port,
+		document.getElementById('setting-form').db_username,
+		document.getElementById('setting-form').db_password
+	];
+	var note = document.getElementById('db_note');
+	if(target.value==='Ddm_Db_PDO_Sqlite'){
+		for(var i = 0; i<inps.length; i++)inps[i].parentNode.style.display = 'none';
+		if(!note){
+			note = document.createElement('div');
+			note.setAttribute('id','db_note');
+			document.getElementById('setting-form').db_name.parentNode.appendChild(note);
+		}
+		note.innerHTML = '<label style="padding-top:0;padding-bottom:0;margin:0;line-height:inherit;">&nbsp;</label>请填写数据库文件名'+
+		'<br/><label style="padding-top:0;padding-bottom:0;margin:0;line-height:inherit;">&nbsp;</label>千万不要是一个可被URL访问的路径！否则数据库文件将被他人下载！'
+		+'<br/><label style="padding-top:0;padding-bottom:0;margin:0;line-height:inherit;">&nbsp;</label>建议是../database/db.sqlite3，或者使用绝对路径放在其它文件夹中。';
+	}else{
+		if(note)note.parentNode.removeChild(note);
+		for(var i = 0; i<inps.length; i++){
+			if(inps[i].parentNode.style.display==='none')inps[i].parentNode.style.display = '';
+		}
+	}
+}
+document.getElementById('setting-form').db_driver.onchange = function (e) {
+	e = e || window.event;
+	var target = e.target || e.srcElement;
+	dbDriverChanged(target);
+};
+dbDriverChanged(document.getElementById('setting-form').db_driver)
 </script>

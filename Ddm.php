@@ -9,8 +9,8 @@
 
 $_SERVER['START_TIME'] = microtime(true);
 
-define('_VERSION_', '1.5.0');
-define('GET_MQG',get_magic_quotes_gpc());
+define('_VERSION_', '1.6.0');
+define('GET_MQG',function_exists('get_magic_quotes_gpc') ? get_magic_quotes_gpc() : false);
 define('SITE_ROOT',strtr(dirname(__FILE__),'\\','/'));
 define('MODULES_FOLDER','modules');
 define('DESIGN_FOLDER','design');
@@ -338,8 +338,10 @@ final class Ddm{
 					$install = new Core_Model_Install();
 					$install->applyInstall();
 				}
+				if(self::isInstalled()){
+					self::$_language->isSaveToCookie(true)->loadFromVisitor($languageId);
+				}
 
-				self::$_language->isSaveToCookie(true)->loadFromVisitor($languageId);
 				self::$_translate = self::getHelper('Language');
 				self::$_initialized = true;
 			}catch(Exception $exception){
@@ -398,7 +400,15 @@ final class Ddm{
 		}
 
 		$errorMessage .= ": $errstr  in $errfile on line $errline";
-		Ddm::getHelper('core')->saveFile(SITE_ROOT.'/data/errors/php/php-errors-'.date('Y-m').'.txt','['.date('c')."] $errorMessage\r\n[{$_SERVER['REQUEST_METHOD']}]{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}\r\n",FILE_APPEND);
+		$logMessage = '['.date('c').'] '.$errorMessage.PHP_EOL;
+		if(PHP_SAPI==='cli'){
+			$logMessage .= '[CLI] php -f ';
+			if (!empty($_SERVER['PWD']) && strpos($_SERVER['argv'][0], $_SERVER['PWD'])!==0) $logMessage .= $_SERVER['PWD'].DIRECTORY_SEPARATOR;
+			$logMessage .= implode(' ', $_SERVER['argv']);
+		}else{
+			$logMessage .= '['.$_SERVER['REQUEST_METHOD'].']'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+		}
+		Ddm::getHelper('core')->saveFile(SITE_ROOT.'/data/errors/php/php-errors-'.date('Y-m').'.txt',$logMessage.PHP_EOL,FILE_APPEND);
 		if(self::$enableDebug)echo "$errorMessage<br />\r\n";
 		return true;
 	}

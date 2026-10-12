@@ -33,10 +33,10 @@ class Step_Setup extends Step_Abstract {
 			md5($_SERVER['HTTP_HOST'].'-'.(isset($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : gethostbyname($_SERVER['HTTP_HOST'])).'-'.$_SERVER['REQUEST_TIME']),
 			$_POST['db_tablepre'],
 			$_POST['db_driver'],
-			$_POST['db_host'],
-			$_POST['db_port'],
-			$_POST['db_username'],
-			$_POST['db_password'],
+			$_POST['db_driver']==='Ddm_Db_PDO_Sqlite' ? '' : $_POST['db_host'],
+			$_POST['db_driver']==='Ddm_Db_PDO_Sqlite' ? '' : $_POST['db_port'],
+			$_POST['db_driver']==='Ddm_Db_PDO_Sqlite' ? '' : $_POST['db_username'],
+			$_POST['db_driver']==='Ddm_Db_PDO_Sqlite' ? '' : $_POST['db_password'],
 			$_POST['db_name'],
 			$_POST['other_cache_driver'],
 			$_POST['other_cache_prefix']
@@ -54,6 +54,11 @@ class Step_Setup extends Step_Abstract {
 		foreach($setting->getElements() as $group){
 			foreach($group['elements'] as $name=>$attributes){
 				$_POST[$name] = isset($_POST[$name]) ? trim($_POST[$name]) : '';
+				if($_POST['db_driver']==='Ddm_Db_PDO_Sqlite'){
+					if($name==='db_host' || $name==='db_port' || $name==='db_username' || $name==='db_password'){
+						continue;
+					}
+				}
 				if($name!='db_password' && $name!='db_tablepre' && $_POST[$name]===''){
 					$result['message'] = $attributes['label'].'不能为空';
 				}else if($_POST[$name]!='' && $name=='db_tablepre' && !preg_match('/^\w+$/',$_POST[$name])){
@@ -70,25 +75,19 @@ class Step_Setup extends Step_Abstract {
 			}
 		}
 		if($result['status']){
-			if($_POST['db_driver']=='Ddm_Db_Mysqli'){
-				$link = @mysqli_connect($_POST['db_host'],$_POST['db_username'],$_POST['db_password'],$_POST['db_name'],$_POST['db_port']);
-				if(!$link){
-					$result['message'] = 'MySQL返回错误: '.mysqli_connect_error();
-					$result['status'] = false;
-				}
-			}else{
-				$_POST['db_driver'] = 'Ddm_Db_Mysql';
-				$link = @mysql_connect($_POST['db_host'].':'.$_POST['db_port'],$_POST['db_username'],$_POST['db_password']);
-				if(!$link){
-					$result['message'] = 'MySQL返回错误: '.mysql_error();
-					$result['status'] = false;
-				}else{
-					mysql_select_db($_POST['db_name'],$link);
-					if(mysql_error()){
-						$result['message'] = 'MySQL返回错误: '.mysql_error($link);
-						$result['status'] = false;
-					}
-				}
+			try {
+				/** @var Ddm_Db_Interface $driver */
+				$driver = new $_POST['db_driver'](array(
+					'host'=>$_POST['db_host'],
+					'port'=>$_POST['db_port'],
+					'username'=>$_POST['db_username'],
+					'password'=>$_POST['db_password'],
+					'dbname'=>$_POST['db_name']
+				));
+				$driver->close();
+			} catch (Exception $e) {
+				$result['message'] = '无法连接数据库: '.$e->getMessage();
+				$result['status'] = false;
 			}
 		}
 		return $result;
@@ -106,12 +105,12 @@ class Step_Setup extends Step_Abstract {
 	 * @return Step_Setup
 	 */
 	private function _createMainTable(){
-		Ddm_Db::getWriteConn()->query("CREATE TABLE IF NOT EXISTS `".Ddm_Db::getTable('modules')."`(
-  `module` varchar(64) NOT NULL default '',
-  `version` varchar(16) NOT NULL default '',
-  `is_active` tinyint(1) unsigned NULL default '0',
-  PRIMARY KEY (`module`)
-) ENGINE=InnoDB CHARACTER SET utf8 COLLATE utf8_general_ci");
+		Ddm_Db::schema()->createIfNotExists('modules', function (Ddm_Db_Schema_Table $table) {
+			$table->string('module', 64)->nullable(false)->primary();
+			$table->string('version', 16)->nullable(false);
+			$table->tinyInteger('is_active')->nullable(false)->defaultValue(0);
+			$table->engine('InnoDB');
+		});
 		return $this;
 	}
 
@@ -126,7 +125,7 @@ class Step_Setup extends Step_Abstract {
 			'admin_name'=>$_POST['admin_username'],
 			'admin_pass'=>$_POST['admin_password'],
 			'groups_position'=>array(1=>1),
-			'admin_loginnum'=>0,
+			'loginnum'=>0,
 			'is_active'=>1,
 			'edit_name'=>1,
 			'edit_pass'=>1
@@ -142,8 +141,8 @@ class Step_Setup extends Step_Abstract {
 				unlink(SITE_ROOT.'/data/setting-post-data.tmp');
 			}
 
-			$this->clearCache();
 			Ddm::isInstalled(true);
+			$this->clearCache();
 			$this->_createMainTable();
 
 			$install = new Core_Model_Install();

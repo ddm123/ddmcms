@@ -8,22 +8,20 @@ class Ddm_Db_PDO_Mysql implements Ddm_Db_Interface
     protected $_querynum = 0;
 
     /**
-     * @param string $ser
-     * @param string $un
-     * @param string $pw
-     * @param string|null $db
-     * @param string|null $port
-     * @param string|null $character
-     * @param bool $pconnect
+     * @param array $config
      */
-    public function __construct($ser, $un, $pw, $db = NULL, $port = NULL, $character = NULL, $pconnect = false)
+    public function __construct(array $config)
     {
-        $dsn = 'mysql:host='.$ser;
-        if ($port !== NULL && $port !== '') $dsn .= ';port='.$port;
-        if ($db !== NULL && $db !== '') $dsn .= ';dbname='.$db;
-        if ($character !== NULL && $character !== '') $dsn .= ';charset='.$character;
+        $dsn = 'mysql:host='.$config['host'];
+        if (isset($config['port']) && $config['port'] !== '') $dsn .= ';port='.$config['port'];
+        if (isset($config['dbname']) && $config['dbname'] !== '') $dsn .= ';dbname='.$config['dbname'];
+        if (isset($config['character']) && $config['character'] !== '') $dsn .= ';charset='.$config['character'];
 
-	    $this->_pdo = new PDO($dsn, $un, $pw, array(PDO::ATTR_PERSISTENT => (bool)$pconnect, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_EMULATE_PREPARES => true));
+	    $this->_pdo = new PDO($dsn, $config['username'], $config['password'], array(
+            PDO::ATTR_PERSISTENT => !empty($config['use_pconnect']),
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_EMULATE_PREPARES => true
+        ));
     }
 
     /**
@@ -41,7 +39,7 @@ class Ddm_Db_PDO_Mysql implements Ddm_Db_Interface
      */
     public function close($dblink = false)
     {
-        //$this->_pdo = NULL;
+        $this->_pdo = NULL;
         return $this;
     }
 

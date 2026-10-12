@@ -57,7 +57,7 @@ class Admin_Controller_Admin extends Admin_Controller_Abstract {
 	}
 
 	public function getFieldValueAction(){
-		$fields = array('admin_name','admin_loginnum','is_active','edit_name','edit_pass');
+		$fields = array('admin_name','loginnum','is_active','edit_name','edit_pass');
 		$field = Ddm_Request::post('f');
 		$id = (int)Ddm_Request::post('id');
 		if($id && in_array($field,$fields)){
@@ -68,7 +68,7 @@ class Admin_Controller_Admin extends Admin_Controller_Abstract {
 	}
 
 	public function saveFieldValueAction(){
-		$fields = array('admin_name','admin_loginnum','is_active','edit_name','edit_pass','description');
+		$fields = array('admin_name','loginnum','is_active','edit_name','edit_pass','description');
 		$field = Ddm_Request::post('f');
 		$id = (int)Ddm_Request::post('id');
 		$value = trim(Ddm_Request::post('v',false,''));
@@ -180,7 +180,7 @@ class Admin_Controller_Admin extends Admin_Controller_Abstract {
 					'admin_pass'=>$passWord,
 					'description'=>Ddm_Request::post('description',false,''),
 					'groups_position'=>$groups,
-					'admin_loginnum'=>(int)Ddm_Request::post('loginnum'),
+					'loginnum'=>(int)Ddm_Request::post('loginnum'),
 					'is_active'=>(int)Ddm_Request::post('is_active'),
 					'edit_name'=>(int)Ddm_Request::post('edit_name'),
 					'edit_pass'=>(int)Ddm_Request::post('edit_pass')

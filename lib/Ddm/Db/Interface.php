@@ -8,10 +8,12 @@
  */
 
 interface Ddm_Db_Interface {
-	const SAVE_INSERT = 'INSERT';
-	const SAVE_UPDATE = 'UPDATE';
-	const SAVE_REPLACE = 'REPLACE';
 	const SAVE_DUPLICATE = 'DUPLICATE';
+
+	/**
+	 * @param array $config
+	 */
+	public function __construct(array $config);
 
 	/**
 	 * 选择数据库
