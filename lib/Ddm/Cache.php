@@ -189,9 +189,6 @@ class Ddm_Cache {
 	 */
 	private function _lock($id){
 		$this->_isLocked[$id] = (bool)$this->_cache->save($this->_lockKey.$id,Ddm_Request::server()->REQUEST_TIME,array(),100);
-		if(get_class($this->_cache)=='Ddm_Cache_Sqlite'){
-			$this->_cache->commit();//马上生效
-		}
 		return $this->_isLocked[$id];
 	}
 
@@ -201,9 +198,6 @@ class Ddm_Cache {
 	 */
 	private function _unlock($id){
 		if(isset($this->_isLocked[$id]) && $this->_isLocked[$id])$this->_cache->remove($this->_lockKey.$id);
-		if(get_class($this->_cache)=='Ddm_Cache_Sqlite'){
-			$this->_cache->commit();//马上生效
-		}
 		$this->_isLocked[$id] = false;
 		return true;
 	}

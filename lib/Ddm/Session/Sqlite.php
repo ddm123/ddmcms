@@ -53,6 +53,7 @@ class Ddm_Session_Sqlite implements Ddm_Session_Interface {
 	public function read($id){
 		$this->_readStatement->execute(array(':id'=>$id));
 		$data = $this->_readStatement->fetchColumn();
+		$this->_readStatement->closeCursor();
 		return $data===false ? '' : $data;
 	}
 
@@ -113,6 +114,7 @@ class Ddm_Session_Sqlite implements Ddm_Session_Interface {
 
 		$this->_pdo = new PDO('sqlite:'.$path.'/session.sqlite');
 		$this->_pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		$this->_pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 		$this->_pdo->exec('CREATE TABLE IF NOT EXISTS session (id VARCHAR(255) PRIMARY KEY, data BLOB, updated INTEGER NOT NULL)');
 		$this->_pdo->exec('CREATE INDEX IF NOT EXISTS session_updated ON session(updated)');
 		$this->_readStatement = $this->_pdo->prepare('SELECT data FROM session WHERE id = :id');
