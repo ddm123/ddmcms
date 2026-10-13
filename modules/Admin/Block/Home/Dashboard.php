@@ -9,9 +9,22 @@
 
 class Admin_Block_Home_Dashboard extends Core_Block_Abstract {
 
+	/**
+	 * @return string
+	 */
 	public function getTimezoneName(){
 		$timezoneName = Ddm::getHelper('core')->getDateTime()->getTimezone()->getName();
 		$timezoneNameLabel = Core_Model_Date_Timezone::singleton()->getTimezones($timezoneName);
 		return $timezoneNameLabel ? $timezoneNameLabel : $timezoneName;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getDbVersion(){
+		$conn = Ddm_Db::getWriteConn();
+		$names = explode('_', get_class($conn));
+		$name = end($names);
+		return $name.' '.$conn->getDbVersion();
 	}
 }

@@ -261,7 +261,7 @@ class Ddm_Db_PDO_Mysql implements Ddm_Db_Interface
      * 返回当前连接的MySQL的版本
      * @return string|null
      */
-    public function getMysqlVersion()
+    public function getDbVersion()
     {
         $result = $this->query('SELECT VERSION() AS version');
         $row = $result->fetch(PDO::FETCH_NUM);

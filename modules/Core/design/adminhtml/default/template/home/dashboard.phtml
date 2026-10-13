@@ -1,4 +1,4 @@
-<?php /* @var $this Admin_Block_Home_Dashboard */ ?>
+<?php /** @var Admin_Block_Home_Dashboard $this */ ?>
 
 <h3><?php echo Ddm::getTranslate('admin')->___('欢迎管理员 %s 登录后台','<font color="#006600">'.Ddm_String::singleton()->escapeHtml(Admin_Model_Admin::loggedInAdmin()->admin_name).'</font>');?></h3>
 <dl class="txtbox">
@@ -17,15 +17,15 @@
 <dl class="txtbox">
   <dt><?php echo Ddm::getTranslate('admin')->translate('服务器信息');?></dt>
   <dd><span id="phpinfo"><?php
-  echo Ddm::getTranslate('admin')->___('当前服务器时间: %s',Ddm::getHelper('core')->formatDateTime($_SERVER['REQUEST_TIME'])).' ';
+  echo Ddm::getTranslate('admin')->___('当前时间: %s',Ddm::getHelper('core')->formatDateTime($_SERVER['REQUEST_TIME'])).', ';
   echo Ddm::getTranslate('admin')->___('时区: %s',$this->getTimezoneName()).'<br />';
-  echo Ddm::getTranslate('admin')->___('当前服务器默认时间: %s',date('Y-m-d H:i:s')).' ';
+  echo Ddm::getTranslate('admin')->___('当前服务器默认时间: %s',date('Y-m-d H:i:s')).', ';
   echo Ddm::getTranslate('admin')->___('默认时区: %s',date_default_timezone_get()).'<br />';
   echo Ddm::getTranslate('admin')->___('操作系统: %s',PHP_OS).'<br />';
   echo Ddm::getTranslate('admin')->___('Web服务器: %s',$_SERVER['SERVER_SOFTWARE']).'<br />';
   echo Ddm::getTranslate('admin')->___('服务器IP: %s',isset($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : gethostbyname($_SERVER['SERVER_NAME'])).'<br />';
   echo Ddm::getTranslate('admin')->___('PHP版本: %s',PHP_VERSION).'<br />';
-  echo Ddm::getTranslate('admin')->___('MySQL版本: %s',Ddm_Db::getWriteConn()->getMysqlVersion());
+  echo Ddm::getTranslate('admin')->___('数据库版本: %s',$this->getDbVersion());
   ?></span></dd>
 </dl>
 <?php if(Ddm::$enableDebug){?>

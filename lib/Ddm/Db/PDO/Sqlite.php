@@ -171,7 +171,7 @@ class Ddm_Db_PDO_Sqlite implements Ddm_Db_Interface
      * 返回当前连接的SQLite版本
      * @return string|null
      */
-    public function getMysqlVersion()
+    public function getDbVersion()
     {
         $result = $this->query('SELECT sqlite_version() AS version');
         $row = $result->fetch(PDO::FETCH_ASSOC);

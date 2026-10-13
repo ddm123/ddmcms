@@ -83,9 +83,10 @@ interface Ddm_Db_Interface {
 	public function freeResult($result);
 
 	/**
-	 * 返回当前连接的MySQL的版本
+	 * 返回当前连接的数据库版本
+     * @return string|null
 	 */
-	public function getMysqlVersion();
+	public function getDbVersion();
 
 	/**
 	 * @return int 一共执行多少次SQL命令
