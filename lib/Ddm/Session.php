@@ -58,12 +58,11 @@ class Ddm_Session extends Ddm_Object {
 		}
 
 		$cookieLifetime = Ddm_Cookie::singleton()->getLifetime();
-		if(!$cookieLifetime)
-			session_set_cookie_params($cookieLifetime,Ddm_Cookie::singleton()->getPath(),Ddm_Cookie::singleton()->getDomain(),Ddm_Cookie::singleton()->isSecure(),Ddm_Cookie::singleton()->getHttponly());
+		session_set_cookie_params((int)$cookieLifetime,Ddm_Cookie::singleton()->getPath(),Ddm_Cookie::singleton()->getDomain(),Ddm_Cookie::singleton()->isSecure(),Ddm_Cookie::singleton()->getHttponly());
 
 		$this->setSessionName($sessionName)->setSessionId();
 		session_start();
-		$cookieLifetime and Ddm_Cookie::singleton()->set(session_name(),session_id(),$cookieLifetime,NULL,NULL,NULL,NULL,'');
+		$cookieLifetime and Ddm_Cookie::singleton()->set(session_name(),session_id(),$cookieLifetime,Ddm_Cookie::singleton()->getPath(),Ddm_Cookie::singleton()->getDomain(),Ddm_Cookie::singleton()->isSecure(),Ddm_Cookie::singleton()->getHttponly(),'');
 
 		return $this;
 	}

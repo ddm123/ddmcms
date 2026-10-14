@@ -28,6 +28,7 @@ class Step_Setting extends Step_Abstract {
 	public function getCacheDrivers(){
 		$drivers = array();
 		if(extension_loaded('apc'))$drivers['Ddm_Cache_Apc'] = 'Apc';
+		$drivers['Ddm_Cache_Redis'] = 'Redis';
 		$drivers['Ddm_Cache_File'] = 'File';
 		if(extension_loaded('pdo_sqlite'))$drivers['Ddm_Cache_Sqlite'] = 'SQLite';
 		return $drivers;

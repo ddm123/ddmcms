@@ -8,12 +8,18 @@
  */
 
 class Ddm_Cache_File implements Ddm_Cache_Interface {
-	protected $_options = array('cache_dir'=>'data/cache/data-cache','dir_mode'=>0755);
+	protected $_options = array('cache_dir'=>'data/cache/data-cache','dir_mode'=>NULL);
 
 	private $_ids = array();
 
 	public function __construct(array $options){
 		$this->_options = array_merge($this->_options, $options);
+
+		if(!$this->_options['dir_mode']){
+			$this->_options['dir_mode'] = 0755;
+		}else if(is_string($this->_options['dir_mode'])){
+			$this->_options['dir_mode'] = octdec($this->_options['dir_mode']);
+		}
 	}
 
 	/**

@@ -9,6 +9,8 @@
 
 interface Ddm_Cache_Interface {
 
+	public function __construct(array $options);
+
 	/**
 	 * @param string $id
 	 * @param string $data

@@ -20,7 +20,7 @@ class Ddm_Cookie {
 	protected $_domain = NULL;
 	protected $_isSecure = NULL;
 	protected $_httponly = NULL;
-	protected $_prefix = NULL;
+	protected $_prefix = '';
 
 	public function __construct() {
 		$this->_prefix = (string)Ddm::getConfig()->getConfigValue(self::CONFIG_PATH_COOKIE_PREFIX);
@@ -36,35 +36,35 @@ class Ddm_Cookie {
 
 	/**
 	 * Retrieve Domain for cookie
-	 * @return string
+	 * @return string|null
 	 */
 	public function getDomain(){
 		if($this->_domain===NULL){
-			$this->_domain = (string)Ddm::getConfig()->getConfigValue(self::CONFIG_PATH_COOKIE_DOMAIN);
+			$this->_domain = array('value' => Ddm::getConfig()->getConfigValue(self::CONFIG_PATH_COOKIE_DOMAIN));
 		}
-		return $this->_domain;
+		return $this->_domain['value'];
 	}
 
 	/**
 	 * Set cookie domain
-	 * @param string domain
+	 * @param string $domain
 	 * @return Ddm_Cookie
 	 */
 	public function setDomain($domain){
-		if($domain)$this->_domain = $domain;
+		if($this->_domain)$this->_domain['value'] = $domain;
+		else $this->_domain = array('value' => $domain);
 		return $this;
 	}
 
 	/**
 	 * Retrieve Path for cookie
-	 * @return string
+	 * @return string|null
 	 */
 	public function getPath(){
 		if($this->_path===NULL){
-			$this->_path = Ddm::getConfig()->getConfigValue(self::CONFIG_PATH_COOKIE_PATH);
-			if(!$this->_path)$this->_path = '/';
+			$this->_path = array('value' => Ddm::getConfig()->getConfigValue(self::CONFIG_PATH_COOKIE_PATH));
 		}
-		return $this->_path;
+		return $this->_path['value'];
 	}
 
 	/**
@@ -73,43 +73,50 @@ class Ddm_Cookie {
 	 * @return Ddm_Cookie
 	 */
 	public function setPath($path){
-		if($path)$this->_path = $path;
+		if($this->_path)$this->_path['value'] = $path;
+		else $this->_path = array('value' => $path);
 		return $this;
 	}
 
 	/**
 	 * Retrieve cookie lifetime
-	 * @return int
+	 * @return int|null
 	 */
 	public function getLifetime(){
 		if($this->_lifetime===NULL){
-			$this->_lifetime = (int)Ddm::getConfig()->getConfigValue(self::CONFIG_PATH_COOKIE_LIFETIME);
-			$this->_lifetime *= 60;
+			$lifetime = Ddm::getConfig()->getConfigValue(self::CONFIG_PATH_COOKIE_LIFETIME);
+			if($lifetime==='' || $lifetime===NULL)$lifetime = NULL;
+			else $lifetime = (int)$lifetime * 60;
+			$this->_lifetime = array('value' => $lifetime);
 		}
-		return $this->_lifetime;
+		return $this->_lifetime['value'];
 	}
 
 	/**
 	 * Set cookie lifetime
 	 *
-	 * @param int $lifetime
+	 * @param int $lifetime seconds
 	 * @return Ddm_Cookie
 	 */
 	public function setLifetime($lifetime){
-		$this->_lifetime = (int)$lifetime;
+		if($this->_lifetime)$this->_lifetime['value'] = $lifetime;
+		else $this->_lifetime = array('value' => $lifetime);
 		return $this;
 	}
 
 	/**
 	 * Retrieve use HTTP only flag
 	 *
-	 * @return bool
+	 * @return bool|null
 	 */
 	public function getHttponly(){
 		if($this->_httponly===NULL){
-			$this->_httponly = (bool)Ddm::getConfig()->getConfigValue(self::CONFIG_PATH_COOKIE_HTTPONLY);
+			$httponly = Ddm::getConfig()->getConfigValue(self::CONFIG_PATH_COOKIE_HTTPONLY);
+			if($httponly==='' || $httponly===NULL)$httponly = NULL;
+			else $httponly = (bool)$httponly;
+			$this->_httponly = array('value' => $httponly);
 		}
-		return $this->_httponly;
+		return $this->_httponly['value'];
 	}
 
 	/**
@@ -127,10 +134,10 @@ class Ddm_Cookie {
 	 * Is https secure request
 	 * Use secure on adminhtml only
 	 *
-	 * @return bool
+	 * @return bool|null
 	 */
 	public function isSecure(){
-		return (bool)$this->_isSecure;
+		return $this->_isSecure;
 	}
 
 	/**
@@ -140,7 +147,7 @@ class Ddm_Cookie {
 	 * @return Ddm_Cookie
 	 */
 	public function setSecure($secure){
-		$this->_isSecure = (bool)$secure;
+		$this->_isSecure = $secure===NULL ? NULL : (bool)$secure;
 		return $this;
 	}
 
@@ -175,7 +182,7 @@ class Ddm_Cookie {
 		$domain===NULL and $domain = $this->getDomain();
 		$secure===NULL and $secure = $this->isSecure();
 		$httponly===NULL and $httponly = $this->getHttponly();
-		setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
+		setcookie($name, $value, $expire, (string)$path, (string)$domain, (bool)$secure, (bool)$httponly);
 		$_COOKIE[$name] = $value;
 		return $this;
 	}
@@ -196,7 +203,7 @@ class Ddm_Cookie {
 		$domain===NULL and $domain = $this->getDomain();
 		$secure===NULL and $secure = $this->isSecure();
 		$httponly===NULL and $httponly = $this->getHttponly();
-		setcookie($name, '', Ddm_Request::server()->REQUEST_TIME-3600, $path, $domain, $secure, $httponly);
+		setcookie($name, '', Ddm_Request::server()->REQUEST_TIME-3600, (string)$path, (string)$domain, (bool)$secure, (bool)$httponly);
 		unset($_COOKIE[$name]);
 		return $this;
 	}
