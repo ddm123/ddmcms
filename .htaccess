@@ -2,7 +2,8 @@
 
     DirectoryIndex index.html index.php
 
-    RedirectMatch 404 ^.*/(web\.config|\.env|composer\.json|composer\.lock|package\.json|package-lock\.lock|\.htaccess|\.htpasswd|LICENSE)$
+    RedirectMatch 404 ^.*/(web\.config|nginx\.conf|\.env|composer\.json|composer\.lock|package\.json|package-lock\.lock|\.htaccess|\.htpasswd|LICENSE)$
+    RedirectMatch 404 ^/data/.*\.(php[0-9]*|phtml|phar|pht)(/|$) [NC]
 
 <IfModule mod_rewrite.c>
 
@@ -19,9 +20,14 @@
     RewriteCond %{REQUEST_URI} ^/install/.+$
     RewriteCond %{REQUEST_URI} !^/install/index\.php
     RewriteRule .* - [L,R=404]
+
+    RewriteCond %{REQUEST_URI} ^/data/.*\.(?:php[0-9]*|phtml|phar|pht)(?:/|$) [NC]
+    RewriteRule ^ - [R=404,L]
+
     RewriteCond %{REQUEST_URI} ^/data/.+$
     RewriteCond %{REQUEST_URI} !^/data/uploads/.*$
     RewriteRule .* - [L,R=404]
+
     RewriteCond %{REQUEST_URI} ^/(design|lib|modules)/.+\.(php|phtml|xml|sql)$
     RewriteRule .* - [L,R=404]
 
