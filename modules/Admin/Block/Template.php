@@ -82,11 +82,6 @@ class Admin_Block_Template extends Core_Block_Template {
 	protected function _construct() {
 		parent::_construct();
 
-		$this->addCss('admin.css','admin')
-			->addJs('common.js','core')
-			->addJs('admin.js','admin')
-			->addComboboxScript();
-
 		$this->addBlock(
 				$this->createBlock('admin','header','header.phtml')
 					->addBlock($this->createBlock('admin','memus','memus.phtml'),'memus')

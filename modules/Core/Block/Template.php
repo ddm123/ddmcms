@@ -22,6 +22,7 @@ class Core_Block_Template {
 	protected $_designConfig = NULL;
 	private static $_templateFile = array();
 	protected static $_instance = NULL;
+	protected static $_isInitTheme = false;
 	public $title = '';
 	public $template = '';
 
@@ -29,6 +30,7 @@ class Core_Block_Template {
 		$this->template = 'main-page.phtml';
 		$this->_isInAdmin = (bool)$inAdmin;
 		$this->addJavascript('var BASE_URL = "'.Ddm::getCurrentBaseUrl().'";');
+		$this->_initTheme();
 		$this->_construct();
 	}
 
@@ -529,6 +531,45 @@ class Core_Block_Template {
 		$this->addMeta('author','DDM')->addCss('common.css','core');
 		$this->addBlock($this->createBlock('core','head')->isFetch(false),'head');
 		return $this;
+	}
+
+	/**
+	 * @return Core_Block_Template
+	 */
+	protected function _initTheme(){
+		if(!self::$_isInitTheme and $themeFile = $this->_getThemeFile()){
+			$theme = include $themeFile;
+			if(is_string($theme))$theme = new $theme();
+			else if(!is_object($theme)) return $this;
+			if(method_exists($theme,'init')){
+				$theme->init($this);
+			}
+			self::$_isInitTheme = true;
+		}
+		return $this;
+	}
+
+	/**
+	 * @return string|false
+	 */
+	protected function _getThemeFile(){
+		$fileName = 'theme.php';
+		$paths = array();
+		$theme = $this->getTheme();
+		$folder = $this->isInAdmin() ? 'adminhtml' : 'frontend';
+		if($theme!='default')$paths[] = DESIGN_FOLDER."/$folder/$theme/$fileName";
+		$paths[] = DESIGN_FOLDER."/$folder/default/$fileName";
+
+		//在系统模块的当前主题找
+		if($theme!='default')$paths[] = MODULES_FOLDER."/Core/design/$folder/$theme/$fileName";
+		$paths[] = MODULES_FOLDER."/Core/design/$folder/default/$fileName";
+
+		foreach($paths as $path){
+			if(is_file(SITE_ROOT.DIRECTORY_SEPARATOR.$path)){
+				return SITE_ROOT.DIRECTORY_SEPARATOR.$path;
+			}
+		}
+		return false;
 	}
 
 	/**

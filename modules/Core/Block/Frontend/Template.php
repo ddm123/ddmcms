@@ -74,9 +74,6 @@ class Core_Block_Frontend_Template extends Core_Block_Template {
 		parent::_construct();
 
 		$this->title = Ddm::getConfig()->getConfigValue('web/base/web_name');
-		$this->addCss('common.css','core')
-			->addCss('style.css')
-		    ->addJs('common.js','core');
 
 		$breadcrumb = $this->createBlock('core','frontend_breadcrumbs')
 			->addCrumb(array('label'=>Ddm::getTranslate('core')->translate('首页'),'link'=>Ddm::getHomeUrl()))
